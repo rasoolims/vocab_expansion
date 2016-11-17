@@ -251,6 +251,7 @@ class Expander:
                 loss = 0
                 instances = 0
                 errs = []
+                renew_cg()
             l1 = r1.readline()
         if len(errs) > 0:
             sum_errs = esum(errs)
