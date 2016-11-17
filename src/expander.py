@@ -26,13 +26,13 @@ class Expander:
     @staticmethod
     def parse_options():
         parser = OptionParser()
-        parser.add_option('--train_src', dest='train_src_file', metavar='FILE', default='')
+        parser.add_option('--train_src', dest='train_src', metavar='FILE', default='')
         parser.add_option('--train_dst', dest='train_dst', metavar='FILE', default='')
         parser.add_option('--train_align', dest='train_align', metavar='FILE', default='')
         parser.add_option('--dev_src', dest='dev_src', metavar='FILE', default='')
         parser.add_option('--dev_dst', dest='dev_dst', metavar='FILE', default='')
         parser.add_option('--dev_align', dest='dev_align', metavar='FILE', default='')
-        parser.add_option('--test', dest='conll_test', help='Annotated CONLL test file', metavar='FILE', default='')
+        parser.add_option('--test', dest='conll_test', metavar='FILE', default='')
         parser.add_option('--outfile', type='string', dest='outfile', default='')
         parser.add_option('--params', dest='params', help='Parameters file', metavar='FILE', default='params.pickle')
         parser.add_option('--src_emebd', dest='src_embedding', help='External source word embeddings', metavar='FILE')
@@ -50,10 +50,8 @@ class Expander:
         parser.add_option("--eval", action="store_true", dest="eval_format", default=False)
         return parser.parse_args()
 
-    def __init__(self, options, pos_freq_level_dict, translation_dict):
+    def __init__(self, options):
         self.lstm_dims = options.lstm_dims
-        self.pos_freq_level_dict = pos_freq_level_dict
-        self.translation_dict = translation_dict
         self.neg = options.neg
         assert self.neg > 0
 
@@ -69,7 +67,7 @@ class Expander:
             self.src_embed_lookup.init_row(i, self.src_embed[word])
         assert '_RARE_' in self.src_word_dict
         self.src_rare = self.src_word_dict['_RARE_']
-        print 'Loaded src word embeddings. Vector dimensions:', self.edim
+        print 'Loaded src word embeddings. Vector dimensions:', self.src_dim
 
         dst_embed_fp = open(options.dst_embedding, 'r')
         dst_embed_fp.readline()
@@ -83,7 +81,7 @@ class Expander:
             self.dst_embed_lookup.init_row(i, self.dst_embed[word])
         assert '_RARE_' in self.dst_word_dict
         self.dst_rare = self.dst_word_dict['_RARE_']
-        print 'Loaded dst word embeddings. Vector dimensions:', self.edim
+        print 'Loaded dst word embeddings. Vector dimensions:', self.dst_dim
 
         pos_embed_fp = open(options.pos_embedding, 'r')
         pos_embed_fp.readline()
@@ -95,7 +93,7 @@ class Expander:
         self.pos_embed_lookup.set_updated(False)
         for word, i in self.pos_dict.iteritems():
             self.pos_embed_lookup.init_row(i, self.pos_embed[word])
-        print 'Loaded pos word embeddings. Vector dimensions:', self.edim
+        print 'Loaded pos word embeddings. Vector dimensions:', self.pos_dim
 
         dct = pickle.load(codecs.open(options.dst_freq_tag, 'rb'))
         self.dst_freq_tag_dict = dict(list)
@@ -196,3 +194,7 @@ class Expander:
 
 if __name__ == '__main__':
     (options, args) = Expander.parse_options()
+    expander = Expander(options)
+    if options.train_src_file!='':
+        for i in xrange(options.epochs):
+            expander.train(options.train_src,options.train_dst_file, options.train_align)
