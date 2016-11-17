@@ -63,7 +63,7 @@ class Expander:
         src_embed_fp.close()
         self.src_dim = len(self.src_embed.values()[0])
         self.src_word_dict = {word: i for i, word in enumerate(self.src_embed)}
-        self.src_embed_lookup = self.model.add_lookup_parameters((len(self.src_word_dict) + 3, self.edim))
+        self.src_embed_lookup = self.model.add_lookup_parameters((len(self.src_word_dict) + 3, self.src_dim))
         self.src_embed_lookup.set_updated(False)
         for word, i in self.src_word_dict.iteritems():
             self.src_embed_lookup.init_row(i, self.src_embed[word])
@@ -77,7 +77,7 @@ class Expander:
         dst_embed_fp.close()
         self.dst_dim = len(self.dst_embed.values()[0])
         self.dst_word_dict = {word: i for i, word in enumerate(self.dst_embed)}
-        self.dst_embed_lookup = self.model.add_lookup_parameters((len(self.dst_word_dict) + 3, self.edim))
+        self.dst_embed_lookup = self.model.add_lookup_parameters((len(self.dst_word_dict) + 3, self.dst_dim))
         self.dst_embed_lookup.set_updated(False)
         for word, i in self.dst_word_dict.iteritems():
             self.dst_embed_lookup.init_row(i, self.dst_embed[word])
@@ -91,7 +91,7 @@ class Expander:
         pos_embed_fp.close()
         self.pos_dim = len(self.pos_embed.values()[0])
         self.pos_dict = {word: i for i, word in enumerate(self.pos_embed)}
-        self.pos_embed_lookup = self.model.add_lookup_parameters((len(self.pos_dict) + 3, self.edim))
+        self.pos_embed_lookup = self.model.add_lookup_parameters((len(self.pos_dict) + 3, self.pos_dim))
         self.pos_embed_lookup.set_updated(False)
         for word, i in self.pos_dict.iteritems():
             self.pos_embed_lookup.init_row(i, self.pos_embed[word])
