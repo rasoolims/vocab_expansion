@@ -188,7 +188,7 @@ class Expander:
         H2 = parameter(self.H2) if self.H2 != None else None
         O = parameter(self.O)
 
-        errs = []
+        errors = []
         for a in a_s.alignments.keys():
             src = a_s.src_words[a]
             translation =  a_s.dst_words[a_s.alignments[a]]
@@ -207,7 +207,7 @@ class Expander:
             else:
                 r_t = O * (rectify(H1 * inp))
             err = pickneglogsoftmax(r_t, 1)
-            errs.append(err)
+            errors.append(err)
 
             neg_samples = random.sample(self.dst_freq_tag_dict[k], min(self.neg,len(self.dst_freq_tag_dict[k])))
             for sample in neg_samples:
@@ -218,9 +218,9 @@ class Expander:
                 else:
                     r_t = O * (rectify(H1 * inp))
                 err = pickneglogsoftmax(r_t, 0)
-                errs.append(err)
+                errors.append(err)
 
-        return errs
+        return errors
 
     def train(self, src_tagged_path, dst_tagged_path, alignment_path):
         renew_cg()
@@ -238,6 +238,7 @@ class Expander:
             alignment_instance = AlignmentInstance(l1, r2.readline(), a.readline(), self.src_word_dict, self.dst_word_dict, self.pos_dict, i)
             errs += self.build_graph(alignment_instance)
             if len(errs)>options.batchsize:
+                print len(errs)
                 sum_errs = esum(errs)
                 squared = -sum_errs  # * sum_errs
                 loss += sum_errs.scalar_value()
