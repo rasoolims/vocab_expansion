@@ -20,7 +20,7 @@ class AlignmentInstance:
         for a in a_s:
             s,t = a.strip().split('-')
             self.alignments[int(s)] = int(t)
-
+            assert int(s)<len(self.src_words)
 class Expander:
     @staticmethod
     def parse_options():
