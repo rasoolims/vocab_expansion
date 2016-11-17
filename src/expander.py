@@ -238,20 +238,19 @@ class Expander:
             alignment_instance = AlignmentInstance(l1, r2.readline(), a.readline(), self.src_word_dict, self.dst_word_dict, self.pos_dict, i)
             errs += self.build_graph(alignment_instance)
             if len(errs)>options.batchsize:
-                print len(errs)
                 sum_errs = esum(errs)
                 squared = -sum_errs  # * sum_errs
                 loss += sum_errs.scalar_value()
                 instances += len(alignment_instance.alignments)
                 sum_errs.backward()
+                renew_cg()
+            if i%100==0:
                 self.trainer.update()
                 self.trainer.status()
                 print loss / instances
                 loss = 0
                 instances = 0
                 errs = []
-                renew_cg()
-
             l1 = r1.readline()
         if len(errs) > 0:
             sum_errs = esum(errs)
