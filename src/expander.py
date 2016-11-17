@@ -98,7 +98,7 @@ class Expander:
         print 'Loaded pos word embeddings. Vector dimensions:', self.pos_dim
 
         dct = pickle.load(codecs.open(options.dst_freq_tag, 'rb'))
-        self.dst_freq_tag_dict = dict(list)
+        self.dst_freq_tag_dict = dict()
         added = 0
         for k in dct.keys():
             for w in dct[k]:
