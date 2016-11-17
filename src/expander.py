@@ -315,7 +315,7 @@ class Expander:
             l1 = dr1.readline()
 
         mmr = mmr/instances
-        tops = tops/instances
+        tops = float(tops)/instances
         renew_cg()
         print 'mmr:',mmr,'-- tops:',tops, '-- instances:',instances
 
