@@ -167,7 +167,7 @@ class Expander:
                 err = pickneglogsoftmax(r_t, 0)
                 errs.append(err)
 
-        return esum(errs)
+        return esum(errs) if len(errs)>0 else None
 
     def train(self, src_tagged_path, dst_tagged_path, alignment_path):
         renew_cg()
@@ -182,18 +182,19 @@ class Expander:
         while l1:
             alignment_instance = AlignmentInstance(l1, r2.readline(), a.readline(), self.src_word_dict, self.dst_word_dict, self.pos_dict)
             sum_errs = self.build_graph(alignment_instance)
-            squared = -sum_errs  # * sum_errs
-            loss += sum_errs.scalar_value()
-            instances += len(alignment_instance.alignments)
-            sum_errs.backward()
-            self.trainer.update()
-            l1 = r1.readline()
-            i+=1
-            if i%100==0:
-                self.trainer.status()
-                print loss / instances
-                loss = 0
-                instances = 0
+            if sum_errs != None:
+                squared = -sum_errs  # * sum_errs
+                loss += sum_errs.scalar_value()
+                instances += len(alignment_instance.alignments)
+                sum_errs.backward()
+                self.trainer.update()
+                l1 = r1.readline()
+                i+=1
+                if i%100==0:
+                    self.trainer.status()
+                    print loss / instances
+                    loss = 0
+                    instances = 0
 
 if __name__ == '__main__':
     (options, args) = Expander.parse_options()
