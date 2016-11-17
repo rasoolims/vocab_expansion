@@ -159,7 +159,7 @@ class Expander:
             neg_samples = random.sample(self.dst_freq_tag_dict[k], self.neg)
             for sample in neg_samples:
                 tr_embed = self.dst_embed_lookup[sample]
-                inp = concatenate([tr_embed, fw[a], bw[len(src_embed - 1 - a)]])
+                inp = concatenate([tr_embed, fw[a], bw[len(src_embed) - 1 - a]])
                 if H2:
                     r_t = O * rectify(H2 * (rectify(H1 * inp)))
                 else:
