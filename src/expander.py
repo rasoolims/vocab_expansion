@@ -207,4 +207,5 @@ if __name__ == '__main__':
     expander = Expander(options)
     if options.train_src!='':
         for i in xrange(options.epochs):
+            print 'epoch',i
             expander.train(options.train_src,options.train_dst, options.train_align)
