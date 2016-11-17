@@ -11,6 +11,7 @@ class AlignmentInstance:
         s_wt = src_line.strip().split()
         self.src_words = []
         self.src_tags = []
+        self.orig_src_tags = []
         for wt in s_wt:
             i = wt.rfind('_')
             self.src_words.append(src_word_dict[wt[:i]] if wt[:i] in src_word_dict else src_word_dict['_RARE_'])
