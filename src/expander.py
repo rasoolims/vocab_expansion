@@ -201,4 +201,4 @@ if __name__ == '__main__':
     expander = Expander(options)
     if options.train_src!='':
         for i in xrange(options.epochs):
-            expander.train(options.train_src,options.train_dst_file, options.train_align)
+            expander.train(options.train_src,options.train_dst, options.train_align)
