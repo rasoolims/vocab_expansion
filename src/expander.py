@@ -103,6 +103,8 @@ class Expander:
         for k in dct.keys():
             for w in dct[k]:
                 if w in self.dst_word_dict:
+                    if not k in self.dst_freq_tag_dict:
+                        self.dst_freq_tag_dict[k] = []
                     self.dst_freq_tag_dict[k].append(self.dst_word_dict[w])
                     added+=1
         print 'loaded dst_freq_tag_dict with classes:', len(self.dst_freq_tag_dict), 'added words:', added
