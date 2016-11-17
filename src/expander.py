@@ -139,7 +139,7 @@ class Expander:
         for a in a_s.alignments.keys():
             src = a_s.src_words[a]
             translation =  a_s.dst_words[a_s.alignments[a]]
-            if  src == self.src_rare or not src in self.src_freq_dict:
+            if  src == self.src_rare or not src in self.src_freq_dict or a_s.orig_src_tags[a]=='PUNCT':
                 continue # cannot train on this
 
             k = self.src_freq_dict[src]+' '+a_s.orig_src_tags[a]
@@ -156,8 +156,6 @@ class Expander:
             err = pickneglogsoftmax(r_t, 1)
             errs.append(err)
 
-            if len(self.dst_freq_tag_dict[k])<self.neg:
-                print 'less', k
             neg_samples = random.sample(self.dst_freq_tag_dict[k], min(self.neg,len(self.dst_freq_tag_dict[k])))
             for sample in neg_samples:
                 tr_embed = self.dst_embed_lookup[sample]
