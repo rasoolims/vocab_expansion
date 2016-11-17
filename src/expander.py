@@ -429,7 +429,7 @@ if __name__ == '__main__':
         expander = Expander(options)
         output_sentences = []
         with open(options.conll_test, 'r') as conllFP:
-            for sentence in enumerate(read_conll(conllFP)):
+            for i, sentence in enumerate(read_conll(conllFP)):
                 words = []
                 tags = []
                 [words.append(entry.form) for entry in sentence]
@@ -439,8 +439,10 @@ if __name__ == '__main__':
                     entry.lemma = entry.form
                     entry.form = translation
                 output_sentences.append(sentence)
+                sys.stdout.write(str(i)+'...')
+        sys.stdout.write('\nwriting trees')
         with open(options.outfile, 'w') as wf:
             write_conll(wf, output_sentences)
-
+        print 'done!'
 
 
