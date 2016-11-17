@@ -2,6 +2,7 @@ from dynet import *
 import random,sys,os,codecs,pickle
 from optparse import OptionParser
 import numpy as np
+from utils import read_conll, write_conll
 
 class AlignmentInstance:
     def __init__(self, src_line, dst_line, a_line, src_word_dict, dst_word_dict, src_pos_dict, sen):
@@ -193,6 +194,8 @@ class Expander:
         self.pos_dict = saved_params.pop()
         self.dst_word_dict = saved_params.pop()
         self.src_word_dict = saved_params.pop()
+        self.src_rare = self.src_word_dict['_RARE_']
+        self.dst_rare = self.dst_word_dict['_RARE_']
 
     def eval_alignment(self, a_s):
         renew_cg()
@@ -366,6 +369,53 @@ class Expander:
                 self.eval_dev(options)
             renew_cg()
 
+    def translate(self, sen_words, sen_tags):
+        words = [self.src_word_dict[w] if w in self.src_word_dict else self.src_word_dict['_RARE_'] for w in sen_words]
+        tags = [self.pos_dict[t] for t in sen_tags]
+        renew_cg()
+        f_init, b_init = [b.initial_state() for b in self.builders]
+        src_embed = [self.src_embed_lookup[i] for i in words]
+        tag_embed = [self.pos_embed_lookup[i] for i in tags]
+        inputs = [concatenate([src_embed[i], tag_embed[i]]) for i in xrange(len(src_embed))]
+        fw = [x.output() for x in f_init.add_inputs(inputs)]
+        bw = [x.output() for x in b_init.add_inputs(reversed(inputs))]
+
+        H1 = parameter(self.H1)
+        H2 = parameter(self.H2) if self.H2 != None else None
+        O = parameter(self.O)
+
+        translations = []
+        for i,w,t,wstr,tstr in zip(xrange(len(words)),words, tags, sentence.words, sentence.tags):
+            if w == self.src_rare:
+                translations.append('_')
+                continue
+            candidates = []
+            if wstr in self.src2dst_dict:
+                candidates = self.src2dst_dict[wstr]
+            else:
+                freq_level = self.src_freq_dict[w]
+                k = freq_level+' '+tstr
+                if not k in self.dst_freq_tag_dict:
+                    translations.append('_')
+                    continue
+                candidates = self.dst_freq_tag_dict[k]
+                best_score = float('-inf')
+                best_translation = '_'
+                for candidate in candidates:
+                    tr_embed = self.dst_embed_lookup[candidate]
+                    inp = concatenate([tr_embed, fw[i], bw[len(words) - 1 - i]])
+
+                    if H2:
+                        r_t = O * rectify(H2 * (rectify(H1 * inp)))
+                    else:
+                        r_t = O * (rectify(H1 * inp))
+                    score = r_t.npvalue()[1]
+                    if score>best_score:
+                        best_score = score
+                        best_translation = self.rev_dst_dic[candidate]
+                translations.append(best_translation)
+        return translations
+
 if __name__ == '__main__':
     (options, args) = Expander.parse_options()
     expander = Expander(options)
@@ -375,3 +425,22 @@ if __name__ == '__main__':
             expander.train(options)
             print 'saving current epoch'
             expander.model.save(os.path.join(options.output,options.model+'_'+str(i+1)))
+    else:
+        expander = Expander(options)
+        output_sentences = []
+        with open(options.conll_test, 'r') as conllFP:
+            for sentence in enumerate(read_conll(conllFP)):
+                words = []
+                tags = []
+                [words.append(entry.form) for entry in sentence]
+                [tags.append(entry.pos) for entry in sentence]
+                translations = expander.translate(words, tags)
+                for translation, entry in zip(translations,sentence):
+                    entry.lemma = entry.form
+                    entry.form = translation
+                output_sentences.append(sentence)
+        with open(options.outfile, 'w') as wf:
+            write_conll(wf, output_sentences)
+
+
+
