@@ -174,7 +174,6 @@ class Expander:
             self.rev_dst_dic = ['']*len(self.dst_word_dict)
             for i in self.dst_word_dict.keys():
                 self.rev_dst_dic[self.dst_word_dict[i]] = i
-
             print 'loaded rev maps'
 
     def _readParams(self, f):
@@ -431,7 +430,6 @@ if __name__ == '__main__':
             print 'saving current epoch'
             expander.model.save(os.path.join(options.output,options.model+'_'+str(i+1)))
     else:
-        expander = Expander(options)
         output_sentences = []
         with open(options.conll_test, 'r') as conllFP:
             for i, sentence in enumerate(read_conll(conllFP)):
