@@ -147,7 +147,7 @@ class Expander:
                 continue
 
             tr_embed = self.dst_embed_lookup[translation]
-            inp = concatenate([tr_embed, fw[a], bw[len(src_embed-1-a)]])
+            inp = concatenate([tr_embed, fw[a], bw[len(src_embed)-1-a]])
 
             if H2:
                 r_t = O * rectify(H2*(rectify(H1 * inp)))
