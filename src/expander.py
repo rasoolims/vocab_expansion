@@ -156,7 +156,19 @@ class Expander:
 
             dict_fp = open(options.src2dst_dict, 'r')
             dict_fp.readline()
-            self.src2dst_dict = {line.split(' ')[0]: [float(f) for f in line.strip().split(' ')[1:]] for line in dict_fp}
+            self.src2dst_dict = dict()
+            for line in dict_fp:
+                w,t,f = line.split()
+                if not w in self.src2dst_dict:
+                    self.src2dst_dict[w] = set()
+                self.src2dst_dict[w].add(t)
+
+            self.rev_src_dic = ['']*len(self.src_word_dict)
+            for i in self.src_word_dict.keys():
+                self.rev_src_dic[self.src_word_dict[i]] = i
+            self.rev_dst_dic = ['']*len(self.dst_word_dict)
+            for i in self.dst_word_dict.keys():
+                self.rev_dst_dic[self.dst_word_dict[i]] = i
 
     def _readParams(self, f):
         with open(f, 'r') as paramsfp:
