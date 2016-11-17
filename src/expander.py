@@ -181,7 +181,7 @@ class Expander:
         with open(f, 'r') as paramsfp:
             saved_params = pickle.load(paramsfp)
         self.hid2_dim = saved_params.pop()
-        self.hidden_dim = saved_params.pop()
+        self.hid_dim = saved_params.pop()
         self.lstm_dims = saved_params.pop()
         self.pos_dim = saved_params.pop()
         self.dst_dim = saved_params.pop()
