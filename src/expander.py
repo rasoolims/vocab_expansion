@@ -78,7 +78,6 @@ class Expander:
             assert '_RARE_' in self.src_word_dict
             self.src_rare = self.src_word_dict['_RARE_']
             to_save_params.append(self.src_word_dict)
-            to_save_params.append(self.src_embed_lookup)
             print 'Loaded src word embeddings. Vector dimensions:', self.src_dim
 
             dst_embed_fp = open(options.dst_embedding, 'r')
@@ -94,7 +93,6 @@ class Expander:
             assert '_RARE_' in self.dst_word_dict
             self.dst_rare = self.dst_word_dict['_RARE_']
             to_save_params.append(self.dst_word_dict)
-            to_save_params.append(self.dst_embed_lookup)
             print 'Loaded dst word embeddings. Vector dimensions:', self.dst_dim
 
             pos_embed_fp = open(options.pos_embedding, 'r')
@@ -108,7 +106,6 @@ class Expander:
             for word, i in self.pos_dict.iteritems():
                 self.pos_embed_lookup.init_row(i, self.pos_embed[word])
             to_save_params.append(self.pos_dict)
-            to_save_params.append(self.pos_embed_lookup)
             print 'Loaded pos word embeddings. Vector dimensions:', self.pos_dim
 
             dct = pickle.load(codecs.open(options.dst_freq_tag, 'rb'))
@@ -151,11 +148,13 @@ class Expander:
 
             with open(os.path.join(options.output, options.params), 'w') as paramsfp:
                 pickle.dump(to_save_params, paramsfp)
+            print 'params written'
         else:
-            self._readParams(options)
+            self._readParams(options.params)
+            self.model.load(options.model)
 
-    def _readParams(self, options):
-        with open(options.params, 'r') as paramsfp:
+    def _readParams(self, f):
+        with open(f, 'r') as paramsfp:
             saved_params = pickle.load(paramsfp)
         self.hid2_dim = saved_params.pop()
         self.hidden_dim = saved_params.pop()
@@ -173,11 +172,8 @@ class Expander:
 
         self.src_freq_dict = saved_params.pop()
         self.dst_freq_tag_dict = saved_params.pop()
-        self.pos_embed_lookup = saved_params.pop()
         self.pos_dict = saved_params.pop()
-        self.dst_embed_lookup = saved_params.pop()
         self.dst_word_dict = saved_params.pop()
-        self.src_embed_lookup = saved_params.pop()
         self.src_word_dict = saved_params.pop()
 
     def build_graph(self, a_s):
