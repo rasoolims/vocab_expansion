@@ -3,7 +3,7 @@ import random,sys,os,codecs,pickle
 from optparse import OptionParser
 
 class AlignmentInstance:
-    def __init__(self, src_line, dst_line, a_line, src_word_dict, dst_word_dict, src_pos_dict):
+    def __init__(self, src_line, dst_line, a_line, src_word_dict, dst_word_dict, src_pos_dict, sen):
         self.dst_words = [dst_word_dict[w] if w in dst_word_dict else dst_word_dict['_RARE_'] for w in dst_line.strip().split()]
         a_s = a_line.strip().split()
         s_wt = src_line.strip().split()
@@ -20,6 +20,8 @@ class AlignmentInstance:
         for a in a_s:
             s,t = a.strip().split('-')
             self.alignments[int(s)] = int(t)
+            if int(s)>=len(self.src_words):
+                print sen
             assert int(s)<len(self.src_words)
 class Expander:
     @staticmethod
@@ -180,7 +182,8 @@ class Expander:
         instances = 0
         i = 0
         while l1:
-            alignment_instance = AlignmentInstance(l1, r2.readline(), a.readline(), self.src_word_dict, self.dst_word_dict, self.pos_dict)
+            i += 1
+            alignment_instance = AlignmentInstance(l1, r2.readline(), a.readline(), self.src_word_dict, self.dst_word_dict, self.pos_dict, i)
             sum_errs = self.build_graph(alignment_instance)
             if sum_errs != None:
                 squared = -sum_errs  # * sum_errs
@@ -189,7 +192,6 @@ class Expander:
                 sum_errs.backward()
                 self.trainer.update()
                 l1 = r1.readline()
-                i+=1
                 if i%100==0:
                     self.trainer.status()
                     print loss / instances
