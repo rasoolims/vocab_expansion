@@ -49,7 +49,7 @@ class Expander:
         parser.add_option('--src2dst_dict', dest='src2dst_dict', help='Dictionary (needed for decoding) -- format src[space]dst[space]freq', metavar='FILE')
         parser.add_option('--model', dest='model', help='Load/Save model file', metavar='FILE', default='model.model')
         parser.add_option('--epochs', type='int', dest='epochs', default=5)
-        parser.add_option('--batch', type='int', dest='batchsize', default=512)
+        parser.add_option('--batch', type='int', dest='batchsize', default=128)
         parser.add_option('--hidden', type='int', dest='hidden_units', default=200)
         parser.add_option('--hidden2', type='int', dest='hidden2_units', default=0)
         parser.add_option('--lstmdims', type='int', dest='lstm_dims', default=200)
