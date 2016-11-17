@@ -51,6 +51,8 @@ class Expander:
         return parser.parse_args()
 
     def __init__(self, options):
+        self.model = Model()
+        self.trainer = AdamTrainer(self.model)
         self.lstm_dims = options.lstm_dims
         self.neg = options.neg
         assert self.neg > 0
