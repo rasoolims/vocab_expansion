@@ -199,6 +199,6 @@ class Expander:
 if __name__ == '__main__':
     (options, args) = Expander.parse_options()
     expander = Expander(options)
-    if options.train_src_file!='':
+    if options.train_src!='':
         for i in xrange(options.epochs):
             expander.train(options.train_src,options.train_dst_file, options.train_align)
