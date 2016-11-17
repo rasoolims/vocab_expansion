@@ -21,7 +21,7 @@ class AlignmentInstance:
             s,t = a.strip().split('-')
             self.alignments[int(s)] = int(t)
             if int(s)>=len(self.src_words):
-                print sen,a
+                print sen, a, len(self.src_words), len(self.dst_words)
             assert int(s)<len(self.src_words)
 class Expander:
     @staticmethod
