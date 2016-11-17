@@ -1,6 +1,7 @@
 from dynet import *
 import random,sys,os,codecs,pickle
 from optparse import OptionParser
+import numpy as np
 
 class AlignmentInstance:
     def __init__(self, src_line, dst_line, a_line, src_word_dict, dst_word_dict, src_pos_dict, sen):
