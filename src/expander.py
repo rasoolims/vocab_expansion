@@ -154,6 +154,10 @@ class Expander:
             self._readParams(options.params)
             self.model.load(options.model)
 
+            dict_fp = open(options.src2dst_dict, 'r')
+            dict_fp.readline()
+            self.src2dst_dict = {line.split(' ')[0]: [float(f) for f in line.strip().split(' ')[1:]] for line in dict_fp}
+
     def _readParams(self, f):
         with open(f, 'r') as paramsfp:
             saved_params = pickle.load(paramsfp)
@@ -245,13 +249,13 @@ class Expander:
                 instances += len(alignment_instance.alignments)
                 sum_errs.backward()
                 self.trainer.update()
+                errs = []
                 renew_cg()
             if i%100==0:
                 self.trainer.status()
                 print loss / instances
                 loss = 0
                 instances = 0
-                errs = []
             l1 = r1.readline()
         if len(errs) > 0:
             sum_errs = esum(errs)
