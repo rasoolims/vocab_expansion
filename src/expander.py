@@ -330,24 +330,27 @@ class Expander:
         instances = 0
         i = 0
         errs = []
+        status = 0
         while l1:
             i += 1
             alignment_instance = AlignmentInstance(l1, r2.readline(), a.readline(), self.src_word_dict, self.dst_word_dict, self.pos_dict, i)
             errs += self.build_graph(alignment_instance)
-            if i % options.batchsize == 0:
+            if len(errs) > options.batchsize:
                 sum_errs = esum(errs)
                 squared = -sum_errs  # * sum_errs
                 loss += sum_errs.scalar_value()
                 instances += len(alignment_instance.alignments)
                 sum_errs.backward()
                 self.trainer.update()
-                self.trainer.status()
-                print '\n train data '+str(i)
-                if options.dev_src != None:
-                    self.eval_dev(options)
-                print loss / instances
-                loss = 0
-                instances = 0
+                status += 1
+                if status % 100 == 0:
+                    self.trainer.status()
+                    print '\n train data '+str(i)
+                    if options.dev_src != None:
+                        self.eval_dev(options)
+                    print loss / instances
+                    loss = 0
+                    instances = 0
                 errs = []
                 renew_cg()
             l1 = r1.readline()
@@ -360,6 +363,8 @@ class Expander:
             self.trainer.update()
             self.trainer.status()
             print loss / instances
+            if options.dev_src != None:
+                self.eval_dev(options)
             renew_cg()
 
 if __name__ == '__main__':
