@@ -226,7 +226,7 @@ class Expander:
                 r_t = O * rectify(H2*(rectify(H1 * inp)))
             else:
                 r_t = O * (rectify(H1 * inp))
-            gold_res = r_t.value()[1]
+            gold_res = r_t.npvalue()[1]
 
             others = []
             neg_samples = random.sample(self.dst_freq_tag_dict[k], min(self.neg,len(self.dst_freq_tag_dict[k])))
@@ -237,7 +237,7 @@ class Expander:
                     r_t = O * rectify(H2 * (rectify(H1 * inp)))
                 else:
                     r_t = O * (rectify(H1 * inp))
-                others.append(r_t.value()[1])
+                others.append(r_t.npvalue()[1])
 
             rank = 1
             for o in others:
