@@ -194,12 +194,13 @@ class Expander:
                 instances += len(alignment_instance.alignments)
                 sum_errs.backward()
                 self.trainer.update()
-                l1 = r1.readline()
+
                 if i%100==0:
                     self.trainer.status()
                     print loss / instances
                     loss = 0
                     instances = 0
+            l1 = r1.readline()
 
 if __name__ == '__main__':
     (options, args) = Expander.parse_options()
