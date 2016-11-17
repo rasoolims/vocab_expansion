@@ -342,9 +342,9 @@ class Expander:
                 sum_errs.backward()
                 self.trainer.update()
                 errs = []
+                self.trainer.status()
                 if options.dev_src != None:
                     self.eval_dev(options)
-                self.trainer.status()
                 print loss / instances
                 loss = 0
                 instances = 0
