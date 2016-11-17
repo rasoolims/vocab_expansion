@@ -156,7 +156,9 @@ class Expander:
             err = pickneglogsoftmax(r_t, 1)
             errs.append(err)
 
-            neg_samples = random.sample(self.dst_freq_tag_dict[k], self.neg)
+            if len(self.dst_freq_tag_dict[k])<self.neg:
+                print 'less', k
+            neg_samples = random.sample(self.dst_freq_tag_dict[k], min(self.neg,len(self.dst_freq_tag_dict[k])))
             for sample in neg_samples:
                 tr_embed = self.dst_embed_lookup[sample]
                 inp = concatenate([tr_embed, fw[a], bw[len(src_embed) - 1 - a]])
