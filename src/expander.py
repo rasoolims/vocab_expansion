@@ -243,9 +243,9 @@ class Expander:
                 loss += sum_errs.scalar_value()
                 instances += len(alignment_instance.alignments)
                 sum_errs.backward()
+                self.trainer.update()
                 renew_cg()
             if i%100==0:
-                self.trainer.update()
                 self.trainer.status()
                 print loss / instances
                 loss = 0
