@@ -45,6 +45,7 @@ class Expander:
         parser.add_option('--pos_embed', dest='pos_embedding', help='External source pos embeddings', metavar='FILE')
         parser.add_option('--src_freq', dest='src_freq', help='Frequency level info for source word', metavar='FILE')
         parser.add_option('--dst_freq_tag', dest='dst_freq_tag', help='Frequency level + tag info for source word', metavar='FILE')
+        parser.add_option('--src2dst_dict', dest='src2dst_dict', help='Dictionary (needed for decoding) -- format src[space]dst[space]freq', metavar='FILE')
         parser.add_option('--model', dest='model', help='Load/Save model file', metavar='FILE', default='model.model')
         parser.add_option('--epochs', type='int', dest='epochs', default=5)
         parser.add_option('--batch', type='int', dest='batchsize', default=128)
@@ -251,7 +252,6 @@ class Expander:
                 loss = 0
                 instances = 0
                 errs = []
-                renew_cg()
             l1 = r1.readline()
         if len(errs) > 0:
             sum_errs = esum(errs)
