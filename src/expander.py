@@ -194,6 +194,7 @@ class Expander:
         self.src_word_dict = saved_params.pop()
 
     def eval_alignment(self, a_s):
+        renew_cg()
         f_init, b_init = [b.initial_state() for b in self.builders]
         src_embed = [self.src_embed_lookup[i] for i in a_s.src_words]
         tag_embed = [self.pos_embed_lookup[i] for i in a_s.src_tags]
@@ -307,7 +308,6 @@ class Expander:
             alignment_instance = AlignmentInstance(l1, dr2.readline(), da.readline(), self.src_word_dict,
                                                    self.dst_word_dict, self.pos_dict, i)
             (v, ins,top1) = self.eval_alignment(alignment_instance)
-            renew_cg()
             instances+= ins
             mmr += v
             tops+= top1
@@ -315,6 +315,7 @@ class Expander:
 
         mmr = mmr/instances
         tops = tops/instances
+        renew_cg()
         print 'mmr:',mmr,'-- tops:',tops, '-- instances:',instances
 
     def train(self, options):
