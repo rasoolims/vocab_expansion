@@ -1,8 +1,6 @@
 from dynet import *
-from collections import Counter
 import random,sys,os,codecs,pickle
 from optparse import OptionParser
-import numpy as np
 
 class AlignmentInstance:
     def __init__(self, src_line, dst_line, a_line, src_word_dict, dst_word_dict, src_pos_dict):
@@ -128,7 +126,7 @@ class Expander:
     def build_graph(self, a_s):
         f_init, b_init = [b.initial_state() for b in self.builders]
         src_embed = [self.src_embed_lookup[i] for i in a_s.src_words]
-        tag_embed = [self.src_embed_lookup[i] for i in a_s.src_tags]
+        tag_embed = [self.pos_embed_lookup[i] for i in a_s.src_tags]
         inputs = [concatenate([src_embed[i], tag_embed[i]]) for i in xrange(len(src_embed))]
         fw = [x.output() for x in f_init.add_inputs(inputs)]
         bw = [x.output() for x in b_init.add_inputs(reversed(inputs))]
