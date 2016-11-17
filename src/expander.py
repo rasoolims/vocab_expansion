@@ -345,7 +345,6 @@ class Expander:
                 status += 1
                 if status % 100 == 0:
                     self.trainer.status()
-                    print '\n train data '+str(i)
                     if options.dev_src != None:
                         self.eval_dev(options)
                     print loss / instances
