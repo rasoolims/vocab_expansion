@@ -341,13 +341,14 @@ class Expander:
                 instances += len(alignment_instance.alignments)
                 sum_errs.backward()
                 self.trainer.update()
-                errs = []
                 self.trainer.status()
+                print '\n train data '+str(i)
                 if options.dev_src != None:
                     self.eval_dev(options)
                 print loss / instances
                 loss = 0
                 instances = 0
+                errs = []
                 renew_cg()
             l1 = r1.readline()
         if len(errs) > 0:
