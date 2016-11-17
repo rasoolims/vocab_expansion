@@ -154,7 +154,9 @@ class Expander:
             print 'params written'
         else:
             self._readParams(options.params)
+            print 'loaded params'
             self.model.load(options.model)
+            print 'loaded models'
 
             dict_fp = open(options.src2dst_dict, 'r')
             dict_fp.readline()
@@ -164,6 +166,7 @@ class Expander:
                 if not w in self.src2dst_dict:
                     self.src2dst_dict[w] = set()
                 self.src2dst_dict[w].add(t)
+            print 'loaded dictionaries'
 
             self.rev_src_dic = ['']*len(self.src_word_dict)
             for i in self.src_word_dict.keys():
@@ -171,6 +174,8 @@ class Expander:
             self.rev_dst_dic = ['']*len(self.dst_word_dict)
             for i in self.dst_word_dict.keys():
                 self.rev_dst_dic[self.dst_word_dict[i]] = i
+
+            print 'loaded rev maps'
 
     def _readParams(self, f):
         with open(f, 'r') as paramsfp:
