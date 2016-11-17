@@ -34,9 +34,9 @@ class Expander:
         parser.add_option('--train_src', dest='train_src', metavar='FILE', default='')
         parser.add_option('--train_dst', dest='train_dst', metavar='FILE', default='')
         parser.add_option('--train_align', dest='train_align', metavar='FILE', default='')
-        parser.add_option('--dev_src', dest='dev_src', metavar='FILE', default='')
-        parser.add_option('--dev_dst', dest='dev_dst', metavar='FILE', default='')
-        parser.add_option('--dev_align', dest='dev_align', metavar='FILE', default='')
+        parser.add_option('--dev_src', dest='dev_src', metavar='FILE')
+        parser.add_option('--dev_dst', dest='dev_dst', metavar='FILE')
+        parser.add_option('--dev_align', dest='dev_align', metavar='FILE')
         parser.add_option('--test', dest='conll_test', metavar='FILE', default='')
         parser.add_option('--outfile', type='string', dest='outfile', default='')
         parser.add_option('--params', dest='params', help='Parameters file', metavar='FILE', default='params.pickle')
@@ -193,6 +193,62 @@ class Expander:
         self.dst_word_dict = saved_params.pop()
         self.src_word_dict = saved_params.pop()
 
+    def eval_alignment(self, a_s):
+        f_init, b_init = [b.initial_state() for b in self.builders]
+        src_embed = [self.src_embed_lookup[i] for i in a_s.src_words]
+        tag_embed = [self.pos_embed_lookup[i] for i in a_s.src_tags]
+        inputs = [concatenate([src_embed[i], tag_embed[i]]) for i in xrange(len(src_embed))]
+        fw = [x.output() for x in f_init.add_inputs(inputs)]
+        bw = [x.output() for x in b_init.add_inputs(reversed(inputs))]
+
+        H1 = parameter(self.H1)
+        H2 = parameter(self.H2) if self.H2 != None else None
+        O = parameter(self.O)
+
+        mmr = 0
+        instances = 0
+        top1 = 0
+        for a in a_s.alignments.keys():
+            src = a_s.src_words[a]
+            translation =  a_s.dst_words[a_s.alignments[a]]
+            if  src == self.src_rare or not src in self.src_freq_dict:
+                continue # cannot train on this
+
+            k = self.src_freq_dict[src]+' '+a_s.orig_src_tags[a]
+            if not k in self.dst_freq_tag_dict:
+                continue
+
+            tr_embed = self.dst_embed_lookup[translation]
+            inp = concatenate([tr_embed, fw[a], bw[len(src_embed)-1-a]])
+
+            if H2:
+                r_t = O * rectify(H2*(rectify(H1 * inp)))
+            else:
+                r_t = O * (rectify(H1 * inp))
+            gold_res = r_t.value()[1]
+
+            others = []
+            neg_samples = random.sample(self.dst_freq_tag_dict[k], min(self.neg,len(self.dst_freq_tag_dict[k])))
+            for sample in neg_samples:
+                tr_embed = self.dst_embed_lookup[sample]
+                inp = concatenate([tr_embed, fw[a], bw[len(src_embed) - 1 - a]])
+                if H2:
+                    r_t = O * rectify(H2 * (rectify(H1 * inp)))
+                else:
+                    r_t = O * (rectify(H1 * inp))
+                others.append(r_t.value()[1])
+
+            rank = 1
+            for o in others:
+                if o>gold_res:
+                    rank+=1
+            mmr += 1.0/rank
+            instances += 1
+            if rank ==1:
+                top1+=1
+
+        return (mmr, instances,top1)
+
     def build_graph(self, a_s):
         f_init, b_init = [b.initial_state() for b in self.builders]
         src_embed = [self.src_embed_lookup[i] for i in a_s.src_words]
@@ -209,7 +265,7 @@ class Expander:
         for a in a_s.alignments.keys():
             src = a_s.src_words[a]
             translation =  a_s.dst_words[a_s.alignments[a]]
-            if  src == self.src_rare or not src in self.src_freq_dict or a_s.orig_src_tags[a]=='PUNCT':
+            if  src == self.src_rare or not src in self.src_freq_dict:
                 continue # cannot train on this
 
             k = self.src_freq_dict[src]+' '+a_s.orig_src_tags[a]
@@ -239,11 +295,33 @@ class Expander:
 
         return errors
 
-    def train(self, src_tagged_path, dst_tagged_path, alignment_path):
+    def eval_dev(self, options):
+        dr1 = codecs.open(options.dev_src, 'r')
+        dr2 = codecs.open(options.dev_dst, 'r')
+        da = codecs.open(options.dev_align, 'r')
+        l1 = dr1.readline()
+        mmr = 0
+        instances = 0
+        tops = 0
+        while l1:
+            alignment_instance = AlignmentInstance(l1, dr2.readline(), da.readline(), self.src_word_dict,
+                                                   self.dst_word_dict, self.pos_dict, i)
+            (v, ins,top1) = self.eval_alignment(alignment_instance)
+            renew_cg()
+            instances+= ins
+            mmr += v
+            tops+= top1
+            l1 = dr1.readline()
+
+        mmr = mmr/instances
+        tops = tops/instances
+        print 'mmr:',mmr,'-- tops:',tops, '-- instances:',instances
+
+    def train(self, options):
         renew_cg()
-        r1 = codecs.open(src_tagged_path,'r')
-        r2 = codecs.open(dst_tagged_path,'r')
-        a = codecs.open(alignment_path,'r')
+        r1 = codecs.open(options.train_src,'r')
+        r2 = codecs.open(options.train_dst,'r')
+        a = codecs.open(options.train_align,'r')
 
         l1 = r1.readline()
         loss = 0
@@ -263,11 +341,13 @@ class Expander:
                 self.trainer.update()
                 errs = []
                 renew_cg()
-            if i%100==0:
+            if i%1000==0:
                 self.trainer.status()
                 print loss / instances
                 loss = 0
                 instances = 0
+                if options.dev_src != None:
+                    self.eval_dev(options)
             l1 = r1.readline()
         if len(errs) > 0:
             sum_errs = esum(errs)
@@ -286,6 +366,6 @@ if __name__ == '__main__':
     if options.train_src!='':
         for i in xrange(options.epochs):
             print 'epoch',i
-            expander.train(options.train_src,options.train_dst, options.train_align)
+            expander.train(options)
             print 'saving current epoch'
             expander.model.save(os.path.join(options.output,options.model+'_'+str(i+1)))
