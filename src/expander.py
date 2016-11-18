@@ -490,12 +490,11 @@ class Expander:
             if wstr in self.src2dst_dict:
                 candidates = [self.dst_word_dict[t] for t in self.src2dst_dict[wstr] if t in self.dst_word_dict]
             else:
-                freq_level = self.src_freq_dict[w] if w in self.src_freq_dict else 0
                 if not tstr in self.dst_tag_word_info_dict:
                     translations.append('_')
                     continue
                 candidates = self.dst_tag_word_info_dict[tstr]
-
+            freq_level, ln = self.src_freq_dict[w] if w in self.src_freq_dict else (0, len(wstr))
             ln = len(wstr) if len(wstr) <= self.src_max_len else self.src_max_len+1
             src_freq_embed = self.dst_freq_lookup[freq_level]
             src_len_embed = noise(self.dst_len_lookup[ln], 0.01)
