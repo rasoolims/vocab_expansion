@@ -302,7 +302,7 @@ class Expander:
 
             others = []
             neg_samples = random.sample(self.dst_tag_word_info_dict[a_s.orig_src_tags[a]],
-                                        min(self.neg, len(self.dst_tag_word_info_dict[a_s.orig_src_tags[a]])))
+                                        min(self.neg*5, len(self.dst_tag_word_info_dict[a_s.orig_src_tags[a]])))
             for sample in neg_samples:
                 tr_embed = self.dst_embed_lookup[sample[0]]
                 tr_freq_embed = self.dst_freq_lookup[sample[1]]
