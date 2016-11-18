@@ -74,6 +74,7 @@ class Expander:
             src_embed_fp.close()
             self.src_dim = len(self.src_embed.values()[0])
             self.src_word_dict = {word: i for i, word in enumerate(self.src_embed)}
+            self.si
             self.src_embed_lookup = self.model.add_lookup_parameters((len(self.src_word_dict) + 3, self.src_dim))
             self.src_embed_lookup.set_updated(False)
             for word, i in self.src_word_dict.iteritems():
@@ -186,12 +187,6 @@ class Expander:
         self.dst_dim = saved_params.pop()
         self.src_dim = saved_params.pop()
         inp_dim = self.src_dim + self.pos_dim
-        self.src_embed_lookup = self.model.add_lookup_parameters((len(self.src_word_dict) + 3, self.src_dim))
-        self.src_embed_lookup.set_updated(False)
-        self.dst_embed_lookup = self.model.add_lookup_parameters((len(self.dst_word_dict) + 3, self.dst_dim))
-        self.dst_embed_lookup.set_updated(False)
-        self.pos_embed_lookup = self.model.add_lookup_parameters((len(self.pos_dict) + 3, self.pos_dim))
-        self.pos_embed_lookup.set_updated(False)
         self.builders = [LSTMBuilder(1, inp_dim, self.lstm_dims, self.model),
                          LSTMBuilder(1, inp_dim, self.lstm_dims, self.model)]
         self.H1 = self.model.add_parameters((self.hid_dim, self.dst_dim + self.lstm_dims * 2))
@@ -206,6 +201,13 @@ class Expander:
         self.src_word_dict = saved_params.pop()
         self.src_rare = self.src_word_dict['_RARE_']
         self.dst_rare = self.dst_word_dict['_RARE_']
+
+        self.src_embed_lookup = self.model.add_lookup_parameters((len(self.src_word_dict) + 3, self.src_dim))
+        self.src_embed_lookup.set_updated(False)
+        self.dst_embed_lookup = self.model.add_lookup_parameters((len(self.dst_word_dict) + 3, self.dst_dim))
+        self.dst_embed_lookup.set_updated(False)
+        self.pos_embed_lookup = self.model.add_lookup_parameters((len(self.pos_dict) + 3, self.pos_dim))
+        self.pos_embed_lookup.set_updated(False)
 
     def eval_alignment(self, a_s):
         renew_cg()
