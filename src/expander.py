@@ -505,6 +505,7 @@ class Expander:
 
             best_score = float('-inf')
             best_translation = '_'
+            best_cand = 0
             for candidate_info in candidates:
                 candidate, freq, ln = candidate_info
                 tr_embed = self.dst_embed_lookup[candidate]
@@ -522,8 +523,10 @@ class Expander:
                 if score > best_score:
                     best_score = score
                     best_translation = self.rev_dst_dic[candidate]
+                    best_cand = candidates
             if not wstr in self.src2dst_dict:
                 print wstr, best_translation,best_score,r_t.npvalue()[0],len(candidates)
+                print tstr, best_cand
             translations.append(best_translation)
         return translations
 
