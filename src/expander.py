@@ -186,6 +186,12 @@ class Expander:
         self.dst_dim = saved_params.pop()
         self.src_dim = saved_params.pop()
         inp_dim = self.src_dim + self.pos_dim
+        self.src_embed_lookup = self.model.add_lookup_parameters((len(self.src_word_dict) + 3, self.src_dim))
+        self.src_embed_lookup.set_updated(False)
+        self.dst_embed_lookup = self.model.add_lookup_parameters((len(self.dst_word_dict) + 3, self.dst_dim))
+        self.dst_embed_lookup.set_updated(False)
+        self.pos_embed_lookup = self.model.add_lookup_parameters((len(self.pos_dict) + 3, self.pos_dim))
+        self.pos_embed_lookup.set_updated(False)
         self.builders = [LSTMBuilder(1, inp_dim, self.lstm_dims, self.model),
                          LSTMBuilder(1, inp_dim, self.lstm_dims, self.model)]
         self.H1 = self.model.add_parameters((self.hid_dim, self.dst_dim + self.lstm_dims * 2))
