@@ -12,6 +12,7 @@ class AlignmentInstance:
         a_s = a_line.strip().split()
         s_wt = src_line.strip().split()
         self.src_words = []
+        self.orig_src_words = []
         self.src_tags = []
         self.orig_src_tags = []
         for wt in s_wt:
@@ -19,7 +20,7 @@ class AlignmentInstance:
             self.src_words.append(src_word_dict[wt[:i]] if wt[:i] in src_word_dict else src_word_dict['_RARE_'])
             self.src_tags.append(src_pos_dict[wt[i + 1:]])
             self.orig_src_tags.append(wt[i + 1:])
-
+            self.orig_src_words.append(wt[:i])
         self.alignments = dict()
         for a in a_s:
             s, t = a.strip().split('-')
@@ -160,8 +161,8 @@ class Expander:
 
             self.src_freq_lookup = self.model.add_lookup_parameters((self.src_max_freq + 1, self.freq_dim))
             self.dst_freq_lookup = self.model.add_lookup_parameters((self.dst_max_freq + 1, self.freq_dim))
-            self.src_len_lookup = self.model.add_lookup_parameters((self.src_max_len + 1, self.len_dim))
-            self.dst_len_lookup = self.model.add_lookup_parameters((self.dst_max_len + 1, self.len_dim))
+            self.src_len_lookup = self.model.add_lookup_parameters((self.src_max_len + 2, self.len_dim))
+            self.dst_len_lookup = self.model.add_lookup_parameters((self.dst_max_len + 2, self.len_dim))
 
             inp_dim = self.src_dim + self.pos_dim
             self.builders = [LSTMBuilder(1, inp_dim, options.lstm_dims, self.model),
@@ -253,8 +254,8 @@ class Expander:
 
         self.src_freq_lookup = self.model.add_lookup_parameters((self.src_max_freq + 1, self.freq_dim))
         self.dst_freq_lookup = self.model.add_lookup_parameters((self.dst_max_freq + 1, self.freq_dim))
-        self.src_len_lookup = self.model.add_lookup_parameters((self.src_max_len + 1, self.len_dim))
-        self.dst_len_lookup = self.model.add_lookup_parameters((self.dst_max_len + 1, self.len_dim))
+        self.src_len_lookup = self.model.add_lookup_parameters((self.src_max_len + 2, self.len_dim))
+        self.dst_len_lookup = self.model.add_lookup_parameters((self.dst_max_len + 2, self.len_dim))
 
     def eval_alignment(self, a_s):
         renew_cg()
@@ -275,12 +276,12 @@ class Expander:
         for a in a_s.alignments.keys():
             src = a_s.src_words[a]
             translation = a_s.dst_words[a_s.alignments[a]]
-            if src == self.src_rare or not src in self.src_freq_dict: continue  # cannot train on this
+            if src == self.src_rare: continue  # cannot train on this
 
-            freq, ln = self.src_freq_dict[src]
+            freq, ln = self.src_freq_dict[src] if src in self.src_freq_dict else (0,len(a_s.orig_src_words[a]))
             src_freq_embed = self.dst_freq_lookup[freq] if freq <= self.src_max_freq else self.dst_freq_lookup[
                 self.src_max_freq]
-            src_len_embed = self.dst_len_lookup[ln] if ln <= self.src_max_len else self.dst_len_lookup[self.src_max_len]
+            src_len_embed = self.dst_len_lookup[ln] if ln <= self.src_max_len else self.dst_len_lookup[self.src_max_len+1]
 
             if not a_s.orig_src_tags[a] in self.dst_tag_word_info_dict: continue
             if not translation in self.dst_freq_dict: continue
@@ -342,9 +343,9 @@ class Expander:
         for a in a_s.alignments.keys():
             src = a_s.src_words[a]
             translation = a_s.dst_words[a_s.alignments[a]]
-            if src == self.src_rare or not src in self.src_freq_dict: continue  # cannot train on this
+            if src == self.src_rare: continue  # cannot train on this
 
-            freq, ln = self.src_freq_dict[src]
+            freq, ln = self.src_freq_dict[src] if src in self.src_freq_dict else (0, len(a_s.orig_src_words[a]))
             src_freq_embed = noise(self.dst_freq_lookup[freq], 0.01)
             src_len_embed = noise(self.dst_len_lookup[ln], 0.01)
 
@@ -489,13 +490,13 @@ class Expander:
             if wstr in self.src2dst_dict:
                 candidates = [self.dst_word_dict[t] for t in self.src2dst_dict[wstr] if t in self.dst_word_dict]
             else:
-                freq_level = self.src_freq_dict[w] if w in self.src_freq_dict else self.src_max_freq
+                freq_level = self.src_freq_dict[w] if w in self.src_freq_dict else 0
                 if not tstr in self.dst_tag_word_info_dict:
                     translations.append('_')
                     continue
                 candidates = self.dst_tag_word_info_dict[tstr]
 
-            ln = len(wstr) if len(wstr) <= self.src_max_len else 0
+            ln = len(wstr) if len(wstr) <= self.src_max_len else self.src_max_len+1
             src_freq_embed = self.dst_freq_lookup[freq_level]
             src_len_embed = noise(self.dst_len_lookup[ln], 0.01)
 
