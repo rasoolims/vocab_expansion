@@ -397,11 +397,11 @@ class Expander:
         O = parameter(self.O)
 
         translations = []
-        for i,w,t,wstr,tstr in zip(xrange(len(words)),words, tags, sentence.words, sentence.tags):
+        for i,w,t,wstr,tstr in zip(xrange(len(words)),words, tags, sen_words, sen_tags):
             if w == self.src_rare:
                 translations.append('_')
                 continue
-            candidates = []
+
             if wstr in self.src2dst_dict:
                 candidates = self.src2dst_dict[wstr]
             else:
@@ -411,21 +411,22 @@ class Expander:
                     translations.append('_')
                     continue
                 candidates = self.dst_freq_tag_dict[k]
-                best_score = float('-inf')
-                best_translation = '_'
-                for candidate in candidates:
-                    tr_embed = self.dst_embed_lookup[candidate]
-                    inp = concatenate([tr_embed, fw[i], bw[len(words) - 1 - i]])
+            
+            best_score = float('-inf')
+            best_translation = '_'
+            for candidate in candidates:
+                tr_embed = self.dst_embed_lookup[candidate]
+                inp = concatenate([tr_embed, fw[i], bw[len(words) - 1 - i]])
 
-                    if H2:
-                        r_t = O * rectify(H2 * (rectify(H1 * inp)))
-                    else:
-                        r_t = O * (rectify(H1 * inp))
-                    score = r_t.npvalue()[1]
-                    if score>best_score:
-                        best_score = score
-                        best_translation = self.rev_dst_dic[candidate]
-                translations.append(best_translation)
+                if H2:
+                    r_t = O * rectify(H2 * (rectify(H1 * inp)))
+                else:
+                    r_t = O * (rectify(H1 * inp))
+                score = r_t.npvalue()[1]
+                if score>best_score:
+                    best_score = score
+                    best_translation = self.rev_dst_dic[candidate]
+            translations.append(best_translation)
         return translations
 
 if __name__ == '__main__':
