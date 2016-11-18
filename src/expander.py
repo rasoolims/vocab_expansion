@@ -136,7 +136,7 @@ class Expander:
                         self.dst_freq_dict[self.dst_word_dict[w]] = (int(freq), len(w))
                         if not tag in self.dst_tag_word_info_dict:
                             self.dst_tag_word_info_dict[tag] = []
-                        self.dst_tag_word_info_dict[k].append((self.dst_word_dict[w], int(freq), len(w)))
+                        self.dst_tag_word_info_dict[tag].append((self.dst_word_dict[w], int(freq), len(w)))
                         if len(w) > self.dst_max_len:
                             self.dst_max_len = len(w)
                         added += 1
