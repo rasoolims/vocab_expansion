@@ -488,7 +488,11 @@ class Expander:
                 continue
 
             if wstr in self.src2dst_dict:
-                candidates = [self.dst_word_dict[t] for t in self.src2dst_dict[wstr] if t in self.dst_word_dict]
+                word_cand = [self.dst_word_dict[t] for t in self.src2dst_dict[wstr] if t in self.dst_word_dict]
+                candidates = []
+                [candidates.append((c,self.dst_freq_dict[c][0],self.dst_freq_dict[c][1])) if c in self.dst_freq_dict
+                 else (c,0,self.dst_max_len+1) for c in word_cand]
+
             else:
                 if not tstr in self.dst_tag_word_info_dict:
                     translations.append('_')
