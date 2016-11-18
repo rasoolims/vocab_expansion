@@ -523,7 +523,7 @@ class Expander:
                     best_score = score
                     best_translation = self.rev_dst_dic[candidate]
             if not wstr in self.src2dst_dict:
-                print wstr, best_translation,best_score
+                print wstr, best_translation,best_score,r_t.npvalue()[0],len(candidates)
             translations.append(best_translation)
         return translations
 
