@@ -403,7 +403,7 @@ class Expander:
                 continue
 
             if wstr in self.src2dst_dict:
-                candidates = self.src2dst_dict[wstr]
+                candidates = [self.dst_word_dict[t] for t in self.src2dst_dict[wstr] if t in self.dst_word_dict]
             else:
                 freq_level = self.src_freq_dict[w]
                 k = freq_level+' '+tstr
@@ -411,7 +411,7 @@ class Expander:
                     translations.append('_')
                     continue
                 candidates = self.dst_freq_tag_dict[k]
-            
+
             best_score = float('-inf')
             best_translation = '_'
             for candidate in candidates:
