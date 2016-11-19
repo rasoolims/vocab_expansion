@@ -332,8 +332,9 @@ class Expander:
         tops = float(tops)/instances
         renew_cg()
         print 'mmr:',mmr,'-- tops:',tops, '-- instances:',instances
+        return mmr
 
-    def train(self, options):
+    def train(self, options, top_mmr):
         renew_cg()
         r1 = codecs.open(options.train_src,'r')
         r2 = codecs.open(options.train_dst,'r')
@@ -360,7 +361,11 @@ class Expander:
                 if status % 1000 == 0:
                     self.trainer.status()
                     if options.dev_src != None:
-                        self.eval_dev(options)
+                        mmr = self.eval_dev(options)
+                        if mmr > top_mmr:
+                            print 'saving best model with mmr', mmr
+                            top_mmr = mmr
+                            expander.model.save(os.path.join(options.output, options.model))
                     print loss / instances
                     loss = 0
                     instances = 0
@@ -378,7 +383,13 @@ class Expander:
             print loss / instances
             if options.dev_src != None:
                 self.eval_dev(options)
+                mmr = self.eval_dev(options)
+                if mmr > top_mmr:
+                    print 'saving best model with mmr', mmr
+                    top_mmr = mmr
+                    expander.model.save(os.path.join(options.output, options.model))
             renew_cg()
+        return top_mmr
 
     def translate(self, sen_words, sen_tags):
         words = [self.src_word_dict[w] if w in self.src_word_dict else self.src_word_dict['_RARE_'] for w in sen_words]
@@ -404,7 +415,7 @@ class Expander:
             if wstr in self.src2dst_dict:
                 candidates = [self.dst_word_dict[t] for t in self.src2dst_dict[wstr] if t in self.dst_word_dict]
             else:
-                freq_level = self.src_freq_dict[w]
+                freq_level = self.src_freq_dict[w] if w in self.src_freq_dict else 0
                 k = freq_level+' '+tstr
                 if not k in self.dst_freq_tag_dict:
                     translations.append('_')
@@ -434,9 +445,10 @@ if __name__ == '__main__':
     (options, args) = Expander.parse_options()
     expander = Expander(options)
     if options.train_src!='':
+        top_mmr = 0
         for i in xrange(options.epochs):
             print 'epoch',i
-            expander.train(options)
+            top_mmr = expander.train(options, top_mmr)
             print 'saving current epoch'
             expander.model.save(os.path.join(options.output,options.model+'_'+str(i+1)))
     else:
