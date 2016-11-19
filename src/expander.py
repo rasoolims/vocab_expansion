@@ -525,9 +525,9 @@ class Expander:
                      tr_len_embed])
 
                 if H2:
-                    r_t = O * rectify(H2 * (rectify(H1 * inp)))
+                    r_t = softmax(O * rectify(H2 * (rectify(H1 * inp))))
                 else:
-                    r_t = O * (rectify(H1 * inp))
+                    r_t = softmax(O * (rectify(H1 * inp)))
                 score = r_t.npvalue()[1]
                 if score > best_score:
                     best_score = score
