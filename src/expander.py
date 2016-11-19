@@ -239,9 +239,9 @@ class Expander:
             inp = concatenate([tr_embed, fw[a], bw[len(src_embed)-1-a]])
 
             if H2:
-                r_t = O * rectify(H2*(rectify(H1 * inp)))
+                r_t = softmax(O * rectify(H2*(rectify(dropout((H1 * inp),0.5)))))
             else:
-                r_t = O * (rectify(H1 * inp))
+                r_t = softmax(O * (rectify(dropout((H1 * inp),0.5))))
             gold_res = r_t.npvalue()[1]
 
             others = []
@@ -419,9 +419,9 @@ class Expander:
                 inp = concatenate([tr_embed, fw[i], bw[len(words) - 1 - i]])
 
                 if H2:
-                    r_t = O * rectify(H2 * (rectify(H1 * inp)))
+                    r_t = softmax(O * rectify(H2 * (rectify(H1 * inp))))
                 else:
-                    r_t = O * (rectify(H1 * inp))
+                    r_t = softmax(O * (rectify(H1 * inp)))
                 score = r_t.npvalue()[1]
                 if score>best_score:
                     best_score = score
