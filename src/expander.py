@@ -378,9 +378,9 @@ class Expander:
                     [tr_embed, fw[a], bw[len(src_embed) - 1 - a], src_freq_embed, src_len_embed, tr_freq_embed,
                      tr_len_embed])
                 if H2:
-                    r_t = O * rectify(H2 * (rectify(H1 * inp)))
+                    r_t = O * rectify(H2 * (rectify(dropout((H1 * inp),0.5))))
                 else:
-                    r_t = O * (rectify(H1 * inp))
+                    r_t = O * (rectify(dropout((H1 * inp),0.5)))
                 err = pickneglogsoftmax(r_t, 0)
                 errors.append(err)
 
@@ -529,7 +529,6 @@ class Expander:
                 print tstr, best_cand,best_score,r_t.npvalue()[0],len(candidates)
             translations.append(best_translation)
         return translations
-
 
 if __name__ == '__main__':
     (options, args) = Expander.parse_options()
