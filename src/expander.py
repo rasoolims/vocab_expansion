@@ -74,7 +74,6 @@ class Expander:
             src_embed_fp.close()
             self.src_dim = len(self.src_embed.values()[0])
             self.src_word_dict = {word: i for i, word in enumerate(self.src_embed)}
-            self.si
             self.src_embed_lookup = self.model.add_lookup_parameters((len(self.src_word_dict) + 3, self.src_dim))
             self.src_embed_lookup.set_updated(False)
             for word, i in self.src_word_dict.iteritems():
