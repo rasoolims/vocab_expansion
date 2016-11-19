@@ -298,9 +298,9 @@ class Expander:
                  dst_len_embed])
 
             if H2:
-                r_t = O * rectify(H2 * (rectify(H1 * inp)))
+                r_t = softmax(O * rectify(H2 * (rectify(H1 * inp))))
             else:
-                r_t = O * (rectify(H1 * inp))
+                r_t = softmax(O * (rectify(H1 * inp)))
             gold_res = r_t.npvalue()[1]
 
             others = []
@@ -314,9 +314,9 @@ class Expander:
                     [tr_embed, fw[a], bw[len(src_embed) - 1 - a], src_freq_embed, src_len_embed, tr_freq_embed,
                      tr_len_embed])
                 if H2:
-                    r_t = O * rectify(H2 * (rectify(H1 * inp)))
+                    r_t = softmax(O * rectify(H2 * (rectify(H1 * inp))))
                 else:
-                    r_t = O * (rectify(H1 * inp))
+                    r_t = softmax(O * (rectify(H1 * inp)))
                 others.append(r_t.npvalue()[1])
 
             rank = 1
