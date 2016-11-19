@@ -346,8 +346,9 @@ class Expander:
             if src == self.src_rare: continue  # cannot train on this
 
             freq, ln = self.src_freq_dict[src] if src in self.src_freq_dict else (0, len(a_s.orig_src_words[a]))
-            src_freq_embed = noise(self.dst_freq_lookup[freq], 0.01)
-            src_len_embed = noise(self.dst_len_lookup[ln], 0.01)
+            ln = ln if ln<self.src_max_len else self.src_max_len+1
+            src_freq_embed = self.dst_freq_lookup[freq]
+            src_len_embed = self.dst_len_lookup[ln]
 
             if not a_s.orig_src_tags[a] in self.dst_tag_word_info_dict: continue
             if not translation in self.dst_freq_dict: continue
@@ -501,7 +502,7 @@ class Expander:
             freq_level, ln = self.src_freq_dict[w] if w in self.src_freq_dict else (0, len(wstr))
             ln = len(wstr) if len(wstr) <= self.src_max_len else self.src_max_len+1
             src_freq_embed = self.dst_freq_lookup[freq_level]
-            src_len_embed = noise(self.dst_len_lookup[ln], 0.01)
+            src_len_embed = self.dst_len_lookup[ln]
 
             best_score = float('-inf')
             best_translation = '_'
