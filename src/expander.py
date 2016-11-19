@@ -257,7 +257,7 @@ class Expander:
         self.src_len_lookup = self.model.add_lookup_parameters((self.src_max_len + 2, self.len_dim))
         self.dst_len_lookup = self.model.add_lookup_parameters((self.dst_max_len + 2, self.len_dim))
 
-    def eval_alignment(self, a_s):
+    def eval_alignment(self, a_s, ivs):
         renew_cg()
         f_init, b_init = [b.initial_state() for b in self.builders]
         src_embed = [self.src_embed_lookup[i] for i in a_s.src_words]
@@ -273,8 +273,11 @@ class Expander:
         mmr = 0
         instances = 0
         top1 = 0
+        oov = 0
         for a in a_s.alignments.keys():
             src = a_s.src_words[a]
+            if not src in ivs:
+                oov+=1
             translation = a_s.dst_words[a_s.alignments[a]]
             if src == self.src_rare: continue  # cannot train on this
 
@@ -325,9 +328,9 @@ class Expander:
             if rank == 1:
                 top1 += 1
 
-        return (mmr, instances, top1)
+        return (mmr, instances, top1, oov)
 
-    def build_graph(self, a_s):
+    def build_graph(self, a_s, ivs):
         f_init, b_init = [b.initial_state() for b in self.builders]
         src_embed = [self.src_embed_lookup[i] for i in a_s.src_words]
         tag_embed = [self.pos_embed_lookup[i] for i in a_s.src_tags]
@@ -342,6 +345,7 @@ class Expander:
         errors = []
         for a in a_s.alignments.keys():
             src = a_s.src_words[a]
+            ivs.add(src)
             translation = a_s.dst_words[a_s.alignments[a]]
             if src == self.src_rare: continue  # cannot train on this
 
@@ -387,27 +391,30 @@ class Expander:
 
         return errors
 
-    def eval_dev(self, options):
+    def eval_dev(self, options, ivs):
         dr1 = codecs.open(options.dev_src, 'r')
         dr2 = codecs.open(options.dev_dst, 'r')
         da = codecs.open(options.dev_align, 'r')
         l1 = dr1.readline()
         mmr = 0
+        oovs = 0
         instances = 0
         tops = 0
         while l1:
             alignment_instance = AlignmentInstance(l1, dr2.readline(), da.readline(), self.src_word_dict,
                                                    self.dst_word_dict, self.pos_dict, i)
-            (v, ins, top1) = self.eval_alignment(alignment_instance)
+            (v, ins, top1,oov) = self.eval_alignment(alignment_instance, ivs)
             instances += ins
             mmr += v
             tops += top1
+            oovs += oov
             l1 = dr1.readline()
 
         mmr = mmr / instances
         tops = float(tops) / instances
+        oovs = float(oovs)/instances
         renew_cg()
-        print 'mmr:', mmr, '-- tops:', tops, '-- instances:', instances
+        print 'mmr:', mmr, '-- tops:', tops, '-- instances:', instances, '-- oovs', oovs
         return  mmr
 
     def train(self, options, top_mmr):
@@ -422,11 +429,12 @@ class Expander:
         i = 0
         errs = []
         status = 0
+        ivs = set()
         while l1:
             i += 1
             alignment_instance = AlignmentInstance(l1, r2.readline(), a.readline(), self.src_word_dict,
                                                    self.dst_word_dict, self.pos_dict, i)
-            errs += self.build_graph(alignment_instance)
+            errs += self.build_graph(alignment_instance, ivs)
             if len(errs) > options.batchsize:
                 sum_errs = esum(errs)
                 squared = -sum_errs  # * sum_errs
@@ -438,7 +446,7 @@ class Expander:
                 if status % 1000 == 0:
                     self.trainer.status()
                     if options.dev_src != None:
-                        mmr = self.eval_dev(options)
+                        mmr = self.eval_dev(options, ivs)
                         if mmr>top_mmr:
                             print 'saving best model with mmr',mmr
                             top_mmr = mmr
