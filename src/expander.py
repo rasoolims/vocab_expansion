@@ -507,10 +507,10 @@ class Expander:
                     translations.append('_')
                     continue
                 candidates = self.dst_tag_word_info_dict[tstr]
-            freq_level, ln = self.src_freq_dict[w] if w in self.src_freq_dict else (0, len(wstr))
-            ln = len(wstr) if len(wstr) <= self.src_max_len else self.src_max_len+1
+            freq_level, s_ln = self.src_freq_dict[w] if w in self.src_freq_dict else (0, len(wstr))
+            s_ln = len(wstr) if len(wstr) <= self.src_max_len else self.src_max_len+1
             src_freq_embed = self.dst_freq_lookup[freq_level]
-            src_len_embed = self.dst_len_lookup[ln]
+            src_len_embed = self.dst_len_lookup[s_ln]
 
             best_score = float('-inf')
             best_translation = '_'
@@ -535,7 +535,7 @@ class Expander:
                     best_cand = candidate
             if not wstr in self.src2dst_dict:
                 print wstr, best_translation
-                print tstr, best_cand,best_score,r_t.npvalue()[0],len(candidates)
+                print tstr, best_cand,best_score,r_t.npvalue()[0],len(candidates),freq_level,s_ln
             translations.append(best_translation)
         return translations
 
