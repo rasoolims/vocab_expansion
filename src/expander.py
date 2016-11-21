@@ -51,9 +51,8 @@ class Expander:
         parser.add_option('--model', dest='model', help='Load/Save model file', metavar='FILE', default='model.model')
         parser.add_option('--epochs', type='int', dest='epochs', default=5)
         parser.add_option('--batch', type='int', dest='batchsize', default=128)
-        parser.add_option('--hidden', type='int', dest='hidden_units', default=200)
-        parser.add_option('--hidden2', type='int', dest='hidden2_units', default=0)
         parser.add_option('--lstmdims', type='int', dest='lstm_dims', default=200)
+        parser.add_option('--projdim',type='int',help='projected dimensions',dest='proj_dim', default=100)
         parser.add_option('--neg', type='int', help='number of negative samples', dest='neg', default=10)
         parser.add_option('--outdir', type='string', dest='output', default='')
         parser.add_option("--eval", action="store_true", dest="eval_format", default=False)
@@ -135,19 +134,16 @@ class Expander:
             inp_dim = self.src_dim+self.pos_dim
             self.builders = [LSTMBuilder(1, inp_dim, options.lstm_dims, self.model),
                              LSTMBuilder(1, inp_dim, options.lstm_dims, self.model)]
-            self.hid_dim = options.hidden_units
-            self.hid2_dim = options.hidden2_units
-            self.H1 = self.model.add_parameters((self.hid_dim, self.dst_dim + options.lstm_dims * 2))
-            self.H2 = None if options.hidden2_units==0 else self.model.add_parameters((self.hid2_dim, self.hid_dim))
-            last_hid_dims = options.hidden2_units if options.hidden2_units>0 else options.hidden_units
-            self.O = self.model.add_parameters((2, last_hid_dims))
+
+            self.proj_dim = options.proj_dim
+            self.dst_projector = self.model.add_parameters((self.proj_dim, self.dst_dim))
+            self.src_projector = self.model.add_parameters((self.proj_dim, self.lstm_dims * 2))
 
             to_save_params.append(self.src_dim)
             to_save_params.append(self.dst_dim)
             to_save_params.append(self.pos_dim)
             to_save_params.append(self.lstm_dims)
-            to_save_params.append(self.hid_dim)
-            to_save_params.append(self.hid2_dim)
+            to_save_params.append(self.proj_dim)
 
             with open(os.path.join(options.output, options.params), 'w') as paramsfp:
                 pickle.dump(to_save_params, paramsfp)
@@ -179,8 +175,7 @@ class Expander:
     def _readParams(self, f):
         with open(f, 'r') as paramsfp:
             saved_params = pickle.load(paramsfp)
-        self.hid2_dim = saved_params.pop()
-        self.hid_dim = saved_params.pop()
+        self.proj_dim = saved_params.pop()
         self.lstm_dims = saved_params.pop()
         self.pos_dim = saved_params.pop()
         self.dst_dim = saved_params.pop()
@@ -188,10 +183,8 @@ class Expander:
         inp_dim = self.src_dim + self.pos_dim
         self.builders = [LSTMBuilder(1, inp_dim, self.lstm_dims, self.model),
                          LSTMBuilder(1, inp_dim, self.lstm_dims, self.model)]
-        self.H1 = self.model.add_parameters((self.hid_dim, self.dst_dim + self.lstm_dims * 2))
-        self.H2 = None if options.hidden2_units == 0 else self.model.add_parameters((self.hid2_dim, self.hid_dim))
-        last_hid_dims = self.hid2_dim if self.hid2_dim > 0 else self.hid_dim
-        self.O = self.model.add_parameters((2, last_hid_dims))
+        self.dst_projector = self.model.add_parameters((self.proj_dim, self.dst_dim))
+        self.src_projector = self.model.add_parameters((self.proj_dim, self.lstm_dims * 2))
 
         self.src_freq_dict = saved_params.pop()
         self.dst_freq_tag_dict = saved_params.pop()
@@ -217,9 +210,8 @@ class Expander:
         fw = [x.output() for x in f_init.add_inputs(inputs)]
         bw = [x.output() for x in b_init.add_inputs(reversed(inputs))]
 
-        H1 = parameter(self.H1)
-        H2 = parameter(self.H2) if self.H2 != None else None
-        O = parameter(self.O)
+        sprojector = parameter(self.src_projector)
+        dprojector = parameter(self.dst_projector)
 
         mmr = 0
         instances = 0
@@ -235,28 +227,21 @@ class Expander:
                 continue
 
             tr_embed = self.dst_embed_lookup[translation]
-            inp = concatenate([tr_embed, fw[a], bw[len(src_embed)-1-a]])
-
-            if H2:
-                r_t = softmax(O * rectify(H2*(rectify(dropout((H1 * inp),0.5)))))
-            else:
-                r_t = softmax(O * (rectify(dropout((H1 * inp),0.5))))
-            gold_res = r_t.npvalue()[1]
+            te = dprojector * tr_embed
+            se = sprojector * concatenate([fw[a], bw[len(src_embed)-1-a]])
+            sim_gold = self.cosine(se, te).npvalue()
 
             others = []
             neg_samples = random.sample(self.dst_freq_tag_dict[k], min(self.neg,len(self.dst_freq_tag_dict[k])))
             for sample in neg_samples:
                 tr_embed = self.dst_embed_lookup[sample]
-                inp = concatenate([tr_embed, fw[a], bw[len(src_embed) - 1 - a]])
-                if H2:
-                    r_t = O * rectify(H2 * (rectify(H1 * inp)))
-                else:
-                    r_t = O * (rectify(H1 * inp))
-                others.append(r_t.npvalue()[1])
+                te = dprojector * tr_embed
+                sim_compet = self.cosine(se, te)
+                others.append(sim_compet.npvalue())
 
             rank = 1
             for o in others:
-                if o>gold_res:
+                if o>sim_gold:
                     rank+=1
             mmr += 1.0/rank
             instances += 1
@@ -265,6 +250,9 @@ class Expander:
 
         return (mmr, instances,top1)
 
+    def cosine(self, se, te):
+        return dot_product(te, se) / (np.sqrt(dot_product(te, te)) * np.sqrt(dot_product(se, se)))
+
     def build_graph(self, a_s):
         f_init, b_init = [b.initial_state() for b in self.builders]
         src_embed = [self.src_embed_lookup[i] for i in a_s.src_words]
@@ -272,10 +260,8 @@ class Expander:
         inputs = [concatenate([src_embed[i], tag_embed[i]]) for i in xrange(len(src_embed))]
         fw = [x.output() for x in f_init.add_inputs(inputs)]
         bw = [x.output() for x in b_init.add_inputs(reversed(inputs))]
-
-        H1 = parameter(self.H1)
-        H2 = parameter(self.H2) if self.H2 != None else None
-        O = parameter(self.O)
+        sprojector = parameter(self.src_projector)
+        dprojector = parameter(self.dst_projector)
 
         errors = []
         for a in a_s.alignments.keys():
@@ -283,32 +269,11 @@ class Expander:
             translation =  a_s.dst_words[a_s.alignments[a]]
             if  src == self.src_rare or not src in self.src_freq_dict:
                 continue # cannot train on this
-
-            k = self.src_freq_dict[src]+' '+a_s.orig_src_tags[a]
-            if not k in self.dst_freq_tag_dict:
-                continue
-
             tr_embed = self.dst_embed_lookup[translation]
-            inp = concatenate([tr_embed, fw[a], bw[len(src_embed)-1-a]])
-
-            if H2:
-                r_t = O * rectify(H2*(rectify(H1 * inp)))
-            else:
-                r_t = O * (rectify(H1 * inp))
-            err = pickneglogsoftmax(r_t, 1)
+            trpe =  dprojector * tr_embed
+            spe = sprojector * concatenate([fw[a], bw[len(src_embed) - 1 - a]])
+            err = self.cosine(spe, trpe)
             errors.append(err)
-
-            neg_samples = random.sample(self.dst_freq_tag_dict[k], min(self.neg,len(self.dst_freq_tag_dict[k])))
-            for sample in neg_samples:
-                tr_embed = self.dst_embed_lookup[sample]
-                inp = concatenate([tr_embed, fw[a], bw[len(src_embed) - 1 - a]])
-                if H2:
-                    r_t = O * rectify(H2 * (rectify(H1 * inp)))
-                else:
-                    r_t = O * (rectify(H1 * inp))
-                err = pickneglogsoftmax(r_t, 0)
-                errors.append(err)
-
         return errors
 
     def eval_dev(self, options):
@@ -392,6 +357,9 @@ class Expander:
         return top_mmr
 
     def translate(self, sen_words, sen_tags):
+        sprojector = parameter(self.src_projector)
+        dprojector = parameter(self.dst_projector)
+
         words = [self.src_word_dict[w] if w in self.src_word_dict else self.src_word_dict['_RARE_'] for w in sen_words]
         tags = [self.pos_dict[t] for t in sen_tags]
         renew_cg()
@@ -401,10 +369,6 @@ class Expander:
         inputs = [concatenate([src_embed[i], tag_embed[i]]) for i in xrange(len(src_embed))]
         fw = [x.output() for x in f_init.add_inputs(inputs)]
         bw = [x.output() for x in b_init.add_inputs(reversed(inputs))]
-
-        H1 = parameter(self.H1)
-        H2 = parameter(self.H2) if self.H2 != None else None
-        O = parameter(self.O)
 
         translations = []
         for i,w,t,wstr,tstr in zip(xrange(len(words)),words, tags, sen_words, sen_tags):
@@ -425,14 +389,11 @@ class Expander:
             best_score = float('-inf')
             best_translation = '_'
             for candidate in candidates:
-                tr_embed = self.dst_embed_lookup[candidate]
-                inp = concatenate([tr_embed, fw[i], bw[len(words) - 1 - i]])
+                tr_embed = self.dst_embed_lookup[translation]
+                te = dprojector * tr_embed
+                se = sprojector * concatenate([fw[i], bw[len(src_embed) - 1 - i]])
+                score = self.cosine(se, te).npvalue()
 
-                if H2:
-                    r_t = softmax(O * rectify(H2 * (rectify(H1 * inp))))
-                else:
-                    r_t = softmax(O * (rectify(H1 * inp)))
-                score = r_t.npvalue()[1]
                 if score>best_score:
                     best_score = score
                     best_translation = self.rev_dst_dic[candidate]
