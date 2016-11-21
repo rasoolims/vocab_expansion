@@ -288,7 +288,7 @@ class Expander:
                 if v>mx:
                     best_other = sim_compet
                     mx = v
-            err = max(0, self.m - self.cosine(spe, trpe) - best_other)
+            err = max(0, self.m - self.cosine(spe, trpe) + best_other)
             errors.append(err)
         return errors
 
