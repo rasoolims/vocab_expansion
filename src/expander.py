@@ -269,10 +269,26 @@ class Expander:
             translation =  a_s.dst_words[a_s.alignments[a]]
             if  src == self.src_rare or not src in self.src_freq_dict:
                 continue # cannot train on this
+
+            k = self.src_freq_dict[src] + ' ' + a_s.orig_src_tags[a]
+            if not k in self.dst_freq_tag_dict:  continue
+
             tr_embed = self.dst_embed_lookup[translation]
-            trpe =  dprojector * tr_embed
+            trpe = dprojector * tr_embed
             spe = sprojector * concatenate([fw[a], bw[len(src_embed) - 1 - a]])
-            err = self.cosine(spe, trpe)
+
+            neg_samples = random.sample(self.dst_freq_tag_dict[k], min(self.neg, len(self.dst_freq_tag_dict[k])))
+            best_other = None
+            mx = float('-inf')
+            for sample in neg_samples:
+                tr_embed = self.dst_embed_lookup[sample]
+                te = dprojector * tr_embed
+                sim_compet = self.cosine(spe, te)
+                v = sim_compet.npvalue()
+                if v>mx:
+                    best_other = sim_compet
+                    mx = v
+            err = max(0, self.m - self.cosine(spe, trpe) - best_other)
             errors.append(err)
         return errors
 
