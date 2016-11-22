@@ -2,7 +2,7 @@ from dynet import *
 import random,sys,os,codecs,pickle
 from optparse import OptionParser
 import numpy as np
-from utils import read_conll, write_conll
+from utils import read_conll, conll_str
 
 class AlignmentInstance:
     def __init__(self, src_line, dst_line, a_line, src_word_dict, dst_word_dict, src_pos_dict, sen):
@@ -427,7 +427,7 @@ if __name__ == '__main__':
             print 'saving current epoch'
             expander.model.save(os.path.join(options.output,options.model+'_'+str(i+1)))
     else:
-        output_sentences = []
+        writer = codecs.open(options.outfile, 'w')
         with open(options.conll_test, 'r') as conllFP:
             for i, sentence in enumerate(read_conll(conllFP)):
                 words = []
@@ -438,9 +438,7 @@ if __name__ == '__main__':
                 for translation, entry in zip(translations,sentence):
                     entry.lemma = entry.form
                     entry.form = translation
-                output_sentences.append(sentence)
                 sys.stdout.write(str(i)+'...')
-        sys.stdout.write('\nwriting trees')
-        with open(options.outfile, 'w') as wf:
-            write_conll(wf, output_sentences)
+                writer.write(conll_str(sentence))
+        writer.close()
         print 'done!'
