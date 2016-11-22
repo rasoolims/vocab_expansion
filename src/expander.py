@@ -394,7 +394,7 @@ class Expander:
                 candidates = [self.dst_word_dict[t] for t in self.src2dst_dict[wstr] if t in self.dst_word_dict]
             else:
                 freq_level = self.src_freq_dict[w] if w in self.src_freq_dict else 0
-                k = freq_level+' '+tstr
+                k = str(freq_level)+' '+tstr
                 if not k in self.dst_freq_tag_dict:
                     translations.append('_')
                     continue
