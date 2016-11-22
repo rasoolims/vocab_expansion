@@ -411,8 +411,8 @@ class Expander:
             print len(concatenate([fw[i], bw[len(src_embed) - 1 - i]]).value())
             se = sprojector * concatenate([fw[i], bw[len(src_embed) - 1 - i]])
             for candidate in candidates:
-                tr_embed = self.dst_embed_lookup[candidate]
                 print 'te..'
+                tr_embed = self.dst_embed_lookup[candidate]
                 te = dprojector * tr_embed
                 print 'cosine..'
                 score = self.cosine(se, te).npvalue()
