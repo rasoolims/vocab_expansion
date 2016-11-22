@@ -51,6 +51,7 @@ class Expander:
         parser.add_option('--model', dest='model', help='Load/Save model file', metavar='FILE', default='model.model')
         parser.add_option('--epochs', type='int', dest='epochs', default=5)
         parser.add_option('--batch', type='int', dest='batchsize', default=128)
+        parser.add_option('--margin', type='float', dest='margin', default=128)
         parser.add_option('--lstmdims', type='int', dest='lstm_dims', default=200)
         parser.add_option('--projdim',type='int',help='projected dimensions',dest='proj_dim', default=100)
         parser.add_option('--neg', type='int', help='number of negative samples', dest='neg', default=10)
@@ -62,6 +63,7 @@ class Expander:
         self.model = Model()
         self.trainer = AdamTrainer(self.model)
         self.lstm_dims = options.lstm_dims
+        self.margin = options.margin
         self.neg = options.neg
         assert self.neg > 0
 
@@ -288,7 +290,7 @@ class Expander:
                 if v>mx:
                     best_other = sim_compet
                     mx = v
-            err = max(0, self.m - self.cosine(spe, trpe) + best_other)
+            err = max(0, self.margin - self.cosine(spe, trpe) + best_other)
             errors.append(err)
         return errors
 
