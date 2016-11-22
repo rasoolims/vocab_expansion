@@ -408,6 +408,7 @@ class Expander:
             best_score = float('-inf')
             best_translation = '_'
             print 'se..'
+            print len(concatenate([fw[i], bw[len(src_embed) - 1 - i]]).value())
             se = sprojector * concatenate([fw[i], bw[len(src_embed) - 1 - i]])
             for candidate in candidates:
                 tr_embed = self.dst_embed_lookup[candidate]
