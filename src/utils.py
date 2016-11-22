@@ -38,7 +38,7 @@ def write_conll(fn, conll_gen):
             for entry in sentence[1:]:
                 fh.write('\t'.join(
                     [str(entry.id), entry.form, entry.lemma, entry.pos, entry.pos, entry.lang_id, str(entry.parent_id),
-                     entry.pred_relation, '_', '_']))
+                     entry.relation, '_', '_']))
                 fh.write('\n')
             fh.write('\n')
 def conll_str(sentence):
@@ -46,7 +46,7 @@ def conll_str(sentence):
     for entry in sentence[1:]:
         output.append('\t'.join(
             [str(entry.id), entry.form, entry.lemma, entry.pos, entry.pos, entry.lang_id, str(entry.parent_id),
-             entry.pred_relation, '_', '_']))
+             entry.relation, '_', '_']))
     return '\n'.join(output)+'\n\n'
 
 numberRegex = re.compile("[0-9]+|[0-9]+\\.[0-9]+|[0-9]+[0-9,]+");
