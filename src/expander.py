@@ -406,11 +406,13 @@ class Expander:
 
             best_score = float('-inf')
             best_translation = '_'
+            print 'se..'
             se = sprojector * concatenate([fw[i], bw[len(src_embed) - 1 - i]])
             for candidate in candidates:
                 tr_embed = self.dst_embed_lookup[candidate]
+                print 'te..'
                 te = dprojector * tr_embed
-
+                print 'cosine..'
                 score = self.cosine(se, te).npvalue()
 
                 if score>best_score:
