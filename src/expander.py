@@ -138,14 +138,14 @@ class Expander:
                              LSTMBuilder(1, inp_dim, options.lstm_dims, self.model)]
 
             self.proj_dim = options.proj_dim
-            self.dst_projector = self.model.add_parameters((self.proj_dim, self.dst_dim))
-            self.src_projector = self.model.add_parameters((self.proj_dim, self.lstm_dims * 2))
-
             to_save_params.append(self.src_dim)
             to_save_params.append(self.dst_dim)
             to_save_params.append(self.pos_dim)
             to_save_params.append(self.lstm_dims)
             to_save_params.append(self.proj_dim)
+
+            self.dst_projector = self.model.add_parameters((self.proj_dim, self.dst_dim))
+            self.src_projector = self.model.add_parameters((self.proj_dim, self.lstm_dims * 2))
 
             with open(os.path.join(options.output, options.params), 'w') as paramsfp:
                 pickle.dump(to_save_params, paramsfp)
