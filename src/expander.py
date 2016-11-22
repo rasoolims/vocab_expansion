@@ -187,6 +187,7 @@ class Expander:
                          LSTMBuilder(1, inp_dim, self.lstm_dims, self.model)]
         self.dst_projector = self.model.add_parameters((self.proj_dim, self.dst_dim))
         self.src_projector = self.model.add_parameters((self.proj_dim, self.lstm_dims * 2))
+        print self.proj_dim, self.lstm_dims * 2
 
         self.src_freq_dict = saved_params.pop()
         self.dst_freq_tag_dict = saved_params.pop()
