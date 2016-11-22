@@ -106,7 +106,6 @@ class Expander:
             self.pos_dim = len(self.pos_embed.values()[0])
             self.pos_dict = {word: i for i, word in enumerate(self.pos_embed)}
             self.pos_embed_lookup = self.model.add_lookup_parameters((len(self.pos_dict) + 3, self.pos_dim))
-            self.pos_embed_lookup.set_updated(False)
             for word, i in self.pos_dict.iteritems():
                 self.pos_embed_lookup.init_row(i, self.pos_embed[word])
             to_save_params.append(self.pos_dict)
@@ -187,8 +186,6 @@ class Expander:
                          LSTMBuilder(1, inp_dim, self.lstm_dims, self.model)]
         self.dst_projector = self.model.add_parameters((self.proj_dim, self.dst_dim))
         self.src_projector = self.model.add_parameters((self.proj_dim, self.lstm_dims * 2))
-        print self.proj_dim, self.lstm_dims * 2, inp_dim
-
         self.src_freq_dict = saved_params.pop()
         self.dst_freq_tag_dict = saved_params.pop()
         self.pos_dict = saved_params.pop()
@@ -202,7 +199,6 @@ class Expander:
         self.dst_embed_lookup = self.model.add_lookup_parameters((len(self.dst_word_dict) + 3, self.dst_dim))
         self.dst_embed_lookup.set_updated(False)
         self.pos_embed_lookup = self.model.add_lookup_parameters((len(self.pos_dict) + 3, self.pos_dim))
-        self.pos_embed_lookup.set_updated(False)
 
     def eval_alignment(self, a_s):
         renew_cg()
@@ -342,7 +338,7 @@ class Expander:
                 sum_errs.backward()
                 self.trainer.update()
                 status += 1
-                if status % 1000 == 0:
+                if status % 10 == 0:
                     self.trainer.status()
                     if options.dev_src != None:
                         mmr = self.eval_dev(options)
@@ -382,7 +378,6 @@ class Expander:
 
         words = [self.src_word_dict[w] if w in self.src_word_dict else self.src_rare for w in sen_words]
         tags = [self.pos_dict[t] for t in sen_tags]
-        renew_cg()
         f_init, b_init = [b.initial_state() for b in self.builders]
         src_embed = [self.src_embed_lookup[i] for i in words]
         tag_embed = [self.pos_embed_lookup[i] for i in tags]
@@ -406,17 +401,12 @@ class Expander:
                     continue
                 candidates = self.dst_freq_tag_dict[k]
 
-            print candidates
             best_score = float('-inf')
             best_translation = '_'
-            print 'se..'
-            print len(concatenate([fw[i], bw[len(src_embed) - 1 - i]]).value())
             se = sprojector * concatenate([fw[i], bw[len(src_embed) - 1 - i]])
             for candidate in candidates:
-                print 'te..'
                 tr_embed = self.dst_embed_lookup[candidate]
                 te = dprojector * tr_embed
-                print 'cosine..'
                 score = self.cosine(se, te).npvalue()
 
                 if score>best_score:
