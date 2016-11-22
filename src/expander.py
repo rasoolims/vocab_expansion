@@ -253,7 +253,7 @@ class Expander:
         return (mmr, instances,top1)
 
     def cosine(self, se, te):
-        return dot_product(te, se) / (sqrt(dot_product(te, te)) * sqrt(dot_product(se, se))).scalar_value()
+        return dot_product(te, se) / (sqrt(dot_product(te, te)) * sqrt(dot_product(se, se))).value()
 
     def build_graph(self, a_s):
         f_init, b_init = [b.initial_state() for b in self.builders]
