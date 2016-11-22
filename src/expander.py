@@ -409,6 +409,7 @@ class Expander:
             best_translation = '_'
             print 'se..'
             print len(concatenate([fw[i], bw[len(src_embed) - 1 - i]]).value())
+            print len(sprojector.value())
             se = sprojector * concatenate([fw[i], bw[len(src_embed) - 1 - i]])
             for candidate in candidates:
                 print 'te..'
