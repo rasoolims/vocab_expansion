@@ -338,7 +338,7 @@ class Expander:
                 sum_errs.backward()
                 self.trainer.update()
                 status += 1
-                if status % 10 == 0:
+                if status % 1000 == 0:
                     self.trainer.status()
                     if options.dev_src != None:
                         mmr = self.eval_dev(options)
