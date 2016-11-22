@@ -380,7 +380,7 @@ class Expander:
         sprojector = parameter(self.src_projector)
         dprojector = parameter(self.dst_projector)
 
-        words = [self.src_word_dict[w] if w in self.src_word_dict else self.src_word_dict['_RARE_'] for w in sen_words]
+        words = [self.src_word_dict[w] if w in self.src_word_dict else self.src_rare for w in sen_words]
         tags = [self.pos_dict[t] for t in sen_tags]
         renew_cg()
         f_init, b_init = [b.initial_state() for b in self.builders]
@@ -406,6 +406,7 @@ class Expander:
                     continue
                 candidates = self.dst_freq_tag_dict[k]
 
+            print candidates
             best_score = float('-inf')
             best_translation = '_'
             print 'se..'
