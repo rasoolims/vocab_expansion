@@ -275,7 +275,6 @@ class Expander:
             trpe = dprojector * tr_embed
             spe = sprojector * concatenate([fw[a], bw[len(src_embed) - 1 - a]])
 
-            '''
             neg_samples = random.sample(self.dst_freq_tag_dict[k], min(self.neg, len(self.dst_freq_tag_dict[k])))
             best_other = None
             mx = float('-inf')
@@ -288,8 +287,6 @@ class Expander:
                     best_other = sim_compet
                     mx = v
             err = max(0, self.margin - self.cosine(spe, trpe) + best_other)
-            '''
-            err = 1.0 - self.cosine(spe, trpe)
             errors.append(err)
         return errors
 
