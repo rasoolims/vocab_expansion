@@ -376,6 +376,7 @@ class Expander:
         return top_mmr
 
     def translate(self, sen_words, sen_tags):
+        renew_cg()
         sprojector = parameter(self.src_projector)
         dprojector = parameter(self.dst_projector)
 
@@ -409,7 +410,6 @@ class Expander:
             best_translation = '_'
             print 'se..'
             print len(concatenate([fw[i], bw[len(src_embed) - 1 - i]]).value())
-            print len(sprojector.value())
             se = sprojector * concatenate([fw[i], bw[len(src_embed) - 1 - i]])
             for candidate in candidates:
                 print 'te..'
