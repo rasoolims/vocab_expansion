@@ -289,7 +289,7 @@ class Expander:
                     mx = v
             err = max(0, self.margin - self.cosine(spe, trpe) + best_other)
             '''
-            err = -self.cosine(spe, trpe)
+            err = 1.0 - self.cosine(spe, trpe)
             errors.append(err)
         return errors
 
