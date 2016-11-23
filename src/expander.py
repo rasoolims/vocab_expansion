@@ -5,40 +5,25 @@ import numpy as np
 from utils import read_conll, conll_str
 
 class AlignmentInstance:
-    def __init__(self, src_line, dst_line, a_line, src_word_dict, dst_word_dict, src_pos_dict, sen):
-        self.dst_words = [dst_word_dict[w] if w in dst_word_dict else dst_word_dict['_RARE_'] for w in dst_line.strip().split()]
-        a_s = a_line.strip().split()
-        s_wt = src_line.strip().split()
+    def __init__(self, sentence, src_word_dict, dst_word_dict, src_pos_dict, sen):
+        self.dst_words = []
         self.src_words = []
         self.src_tags = []
         self.orig_src_tags = []
-        for wt in s_wt:
-            i = wt.rfind('_')
-            self.src_words.append(src_word_dict[wt[:i]] if wt[:i] in src_word_dict else src_word_dict['_RARE_'])
-            self.src_tags.append(src_pos_dict[wt[i+1:]])
-            self.orig_src_tags.append(wt[i+1:])
 
-        self.alignments = dict()
-        for a in a_s:
-            s,t = a.strip().split('-')
-            self.alignments[int(s)] = int(t)
-            if int(s)>=len(self.src_words):
-                print sen, a, len(self.src_words), len(self.dst_words)
-                print src_line
-                print dst_line
-                print a_line
-            assert int(s)<len(self.src_words)
+        for line in sentence.strip().split('\n'):
+            spl = line.split()
+            self.src_words.append(src_word_dict[spl[0]] if spl[0] in src_word_dict else src_word_dict['_RARE_'])
+            self.src_tags.append(src_pos_dict[spl[1]])
+            self.orig_src_tags.append(spl[1])
+            self.dst_words.append(dst_word_dict[spl[2]] if spl[2] in dst_word_dict else dst_word_dict['_RARE_'])
 
 class Expander:
     @staticmethod
     def parse_options():
         parser = OptionParser()
-        parser.add_option('--train_src', dest='train_src', metavar='FILE', default='')
-        parser.add_option('--train_dst', dest='train_dst', metavar='FILE', default='')
-        parser.add_option('--train_align', dest='train_align', metavar='FILE', default='')
-        parser.add_option('--dev_src', dest='dev_src', metavar='FILE')
-        parser.add_option('--dev_dst', dest='dev_dst', metavar='FILE')
-        parser.add_option('--dev_align', dest='dev_align', metavar='FILE')
+        parser.add_option('--train', dest='train_file', metavar='FILE', default='')
+        parser.add_option('--dev', dest='dev_file', metavar='FILE')
         parser.add_option('--test', dest='conll_test', metavar='FILE', default='')
         parser.add_option('--outfile', type='string', dest='outfile', default='')
         parser.add_option('--params', dest='params', help='Parameters file', metavar='FILE', default='params.pickle')
@@ -291,21 +276,16 @@ class Expander:
         return errors
 
     def eval_dev(self, options):
-        dr1 = codecs.open(options.dev_src, 'r')
-        dr2 = codecs.open(options.dev_dst, 'r')
-        da = codecs.open(options.dev_align, 'r')
-        l1 = dr1.readline()
+        sentences = codecs.open(options.dev_file, 'r').read().strip().split('\n\n')
         mmr = 0
         instances = 0
         tops = 0
-        while l1:
-            alignment_instance = AlignmentInstance(l1, dr2.readline(), da.readline(), self.src_word_dict,
-                                                   self.dst_word_dict, self.pos_dict, i)
+        for sentence in sentences:
+            alignment_instance = AlignmentInstance(sentence, self.src_word_dict, self.dst_word_dict, self.pos_dict, i)
             (v, ins,top1) = self.eval_alignment(alignment_instance)
             instances+= ins
             mmr += v
             tops+= top1
-            l1 = dr1.readline()
 
         mmr = mmr/instances
         tops = float(tops)/instances
@@ -315,19 +295,15 @@ class Expander:
 
     def train(self, options, top_mmr):
         renew_cg()
-        r1 = codecs.open(options.train_src,'r')
-        r2 = codecs.open(options.train_dst,'r')
-        a = codecs.open(options.train_align,'r')
-
-        l1 = r1.readline()
+        sentences = codecs.open(options.train_file,'r').read().strip().split('\n\n')
         loss = 0
         instances = 0
         i = 0
         errs = []
         status = 0
-        while l1:
+        for sentence in sentences:
             i += 1
-            alignment_instance = AlignmentInstance(l1, r2.readline(), a.readline(), self.src_word_dict, self.dst_word_dict, self.pos_dict, i)
+            alignment_instance = AlignmentInstance(sentence, self.src_word_dict, self.dst_word_dict, self.pos_dict, i)
             errs += self.build_graph(alignment_instance)
             if len(errs) > options.batchsize:
                 sum_errs = esum(errs)
@@ -350,7 +326,7 @@ class Expander:
                     instances = 0
                 errs = []
                 renew_cg()
-            l1 = r1.readline()
+
         if len(errs) > 0:
             sum_errs = esum(errs)
             squared = -sum_errs  # * sum_errs
@@ -419,7 +395,7 @@ class Expander:
 if __name__ == '__main__':
     (options, args) = Expander.parse_options()
     expander = Expander(options)
-    if options.train_src!='':
+    if options.train_file !='':
         top_mmr = 0
         for i in xrange(options.epochs):
             print 'epoch',i
