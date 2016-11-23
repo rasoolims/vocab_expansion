@@ -5,7 +5,7 @@ import numpy as np
 from utils import read_conll, conll_str
 
 class AlignmentInstance:
-    def __init__(self, sentence, src_word_dict, dst_word_dict, src_pos_dict, sen):
+    def __init__(self, sentence, src_word_dict, dst_word_dict, src_pos_dict):
         self.dst_words = []
         self.src_words = []
         self.src_tags = []
@@ -200,11 +200,11 @@ class Expander:
         mmr = 0
         instances = 0
         top1 = 0
-        for a in a_s.alignments.keys():
+        for a in xrange(len(a_s.src_words)):
             src = a_s.src_words[a]
-            translation =  a_s.dst_words[a_s.alignments[a]]
-            if  src == self.src_rare or not src in self.src_freq_dict:
-                continue # cannot train on this
+            translation =  a_s.dst_words[a]
+            if translation == self.dst_rare: continue
+            if  src == self.src_rare or not src in self.src_freq_dict: continue # cannot train on this
 
             k = self.src_freq_dict[src]+' '+a_s.orig_src_tags[a]
             if not k in self.dst_freq_tag_dict: continue
@@ -247,11 +247,11 @@ class Expander:
         dprojector = parameter(self.dst_projector)
 
         errors = []
-        for a in a_s.alignments.keys():
+        for a in xrange(len(a_s.src_words)):
+            translation =  a_s.dst_words[a]
+            if translation == self.dst_rare: continue
             src = a_s.src_words[a]
-            translation =  a_s.dst_words[a_s.alignments[a]]
-            if  src == self.src_rare or not src in self.src_freq_dict:
-                continue # cannot train on this
+            if src == self.src_rare or not src in self.src_freq_dict: continue # cannot train on this
 
             k = self.src_freq_dict[src] + ' ' + a_s.orig_src_tags[a]
             if not k in self.dst_freq_tag_dict:  continue
@@ -281,7 +281,7 @@ class Expander:
         instances = 0
         tops = 0
         for sentence in sentences:
-            alignment_instance = AlignmentInstance(sentence, self.src_word_dict, self.dst_word_dict, self.pos_dict, i)
+            alignment_instance = AlignmentInstance(sentence, self.src_word_dict, self.dst_word_dict, self.pos_dict)
             (v, ins,top1) = self.eval_alignment(alignment_instance)
             instances+= ins
             mmr += v
@@ -303,13 +303,13 @@ class Expander:
         status = 0
         for sentence in sentences:
             i += 1
-            alignment_instance = AlignmentInstance(sentence, self.src_word_dict, self.dst_word_dict, self.pos_dict, i)
+            alignment_instance = AlignmentInstance(sentence, self.src_word_dict, self.dst_word_dict, self.pos_dict)
             errs += self.build_graph(alignment_instance)
             if len(errs) > options.batchsize:
                 sum_errs = esum(errs)
                 squared = -sum_errs  # * sum_errs
                 loss += sum_errs.scalar_value()
-                instances += len(alignment_instance.alignments)
+                instances += 1
                 sum_errs.backward()
                 self.trainer.update()
                 status += 1
@@ -331,7 +331,7 @@ class Expander:
             sum_errs = esum(errs)
             squared = -sum_errs  # * sum_errs
             loss += sum_errs.scalar_value()
-            instances += len(alignment_instance.alignments)
+            instances += 1
             sum_errs.backward()
             self.trainer.update()
             self.trainer.status()
