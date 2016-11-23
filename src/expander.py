@@ -302,7 +302,8 @@ class Expander:
 
     def train(self, options, top_mmr):
         renew_cg()
-        sentences = random.shuffle(codecs.open(options.train_file, 'r').read().strip().split('\n\n'))
+        sentences = codecs.open(options.train_file, 'r').read().strip().split('\n\n')
+        random.shuffle(sentences)
         loss = 0
         instances = 0
         i = 0
