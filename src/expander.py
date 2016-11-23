@@ -1,8 +1,9 @@
 from dynet import *
-import random,sys,os,codecs,pickle
+import random, sys, os, codecs, pickle
 from optparse import OptionParser
 import numpy as np
 from utils import read_conll, conll_str
+
 
 class AlignmentInstance:
     def __init__(self, sentence, src_word_dict, dst_word_dict, src_pos_dict):
@@ -18,6 +19,7 @@ class AlignmentInstance:
             self.orig_src_tags.append(spl[1])
             self.dst_words.append(dst_word_dict[spl[2]] if spl[2] in dst_word_dict else dst_word_dict['_RARE_'])
 
+
 class Expander:
     @staticmethod
     def parse_options():
@@ -31,14 +33,16 @@ class Expander:
         parser.add_option('--dst_embed', dest='dst_embedding', help='External target word embeddings', metavar='FILE')
         parser.add_option('--pos_embed', dest='pos_embedding', help='External source pos embeddings', metavar='FILE')
         parser.add_option('--src_freq', dest='src_freq', help='Frequency level info for source word', metavar='FILE')
-        parser.add_option('--dst_freq_tag', dest='dst_freq_tag', help='Frequency level + tag info for source word', metavar='FILE')
-        parser.add_option('--src2dst_dict', dest='src2dst_dict', help='Dictionary (needed for decoding) -- format src[space]dst[space]freq', metavar='FILE')
+        parser.add_option('--dst_freq_tag', dest='dst_freq_tag', help='Frequency level + tag info for source word',
+                          metavar='FILE')
+        parser.add_option('--src2dst_dict', dest='src2dst_dict',
+                          help='Dictionary (needed for decoding) -- format src[space]dst[space]freq', metavar='FILE')
         parser.add_option('--model', dest='model', help='Load/Save model file', metavar='FILE', default='model.model')
         parser.add_option('--epochs', type='int', dest='epochs', default=5)
         parser.add_option('--batch', type='int', dest='batchsize', default=128)
         parser.add_option('--margin', type='float', dest='margin', default=128)
         parser.add_option('--lstmdims', type='int', dest='lstm_dims', default=200)
-        parser.add_option('--projdim',type='int',help='projected dimensions',dest='proj_dim', default=100)
+        parser.add_option('--projdim', type='int', help='projected dimensions', dest='proj_dim', default=100)
         parser.add_option('--neg', type='int', help='number of negative samples', dest='neg', default=10)
         parser.add_option('--outdir', type='string', dest='output', default='')
         parser.add_option("--eval", action="store_true", dest="eval_format", default=False)
@@ -56,7 +60,8 @@ class Expander:
             to_save_params = []
             src_embed_fp = open(options.src_embedding, 'r')
             src_embed_fp.readline()
-            self.src_embed = {line.split(' ')[0]: [float(f) for f in line.strip().split(' ')[1:]] for line in src_embed_fp}
+            self.src_embed = {line.split(' ')[0]: [float(f) for f in line.strip().split(' ')[1:]] for line in
+                              src_embed_fp}
             src_embed_fp.close()
             self.src_dim = len(self.src_embed.values()[0])
             self.src_word_dict = {word: i for i, word in enumerate(self.src_embed)}
@@ -71,7 +76,8 @@ class Expander:
 
             dst_embed_fp = open(options.dst_embedding, 'r')
             dst_embed_fp.readline()
-            self.dst_embed = {line.split(' ')[0]: [float(f) for f in line.strip().split(' ')[1:]] for line in dst_embed_fp}
+            self.dst_embed = {line.split(' ')[0]: [float(f) for f in line.strip().split(' ')[1:]] for line in
+                              dst_embed_fp}
             dst_embed_fp.close()
             self.dst_dim = len(self.dst_embed.values()[0])
             self.dst_word_dict = {word: i for i, word in enumerate(self.dst_embed)}
@@ -86,7 +92,8 @@ class Expander:
 
             pos_embed_fp = open(options.pos_embedding, 'r')
             pos_embed_fp.readline()
-            self.pos_embed = {line.split(' ')[0]: [float(f) for f in line.strip().split(' ')[1:]] for line in pos_embed_fp}
+            self.pos_embed = {line.split(' ')[0]: [float(f) for f in line.strip().split(' ')[1:]] for line in
+                              pos_embed_fp}
             pos_embed_fp.close()
             self.pos_dim = len(self.pos_embed.values()[0])
             self.pos_dict = {word: i for i, word in enumerate(self.pos_embed)}
@@ -105,19 +112,19 @@ class Expander:
                         if not k in self.dst_freq_tag_dict:
                             self.dst_freq_tag_dict[k] = []
                         self.dst_freq_tag_dict[k].append(self.dst_word_dict[w])
-                        added+=1
+                        added += 1
             to_save_params.append(self.dst_freq_tag_dict)
             print 'loaded dst_freq_tag_dict with classes:', len(self.dst_freq_tag_dict), 'added words:', added
 
             self.src_freq_dict = dict()
             for ln in codecs.open(options.src_freq, 'r'):
-                w,l,f = ln.split()
+                w, l, f = ln.split()
                 if w in self.src_word_dict:
                     self.src_freq_dict[self.src_word_dict[w]] = l
             to_save_params.append(self.src_freq_dict)
-            print 'loaded src_freq_dict with words:',len(self.src_freq_dict)
+            print 'loaded src_freq_dict with words:', len(self.src_freq_dict)
 
-            inp_dim = self.src_dim+self.pos_dim
+            inp_dim = self.src_dim + self.pos_dim
             self.builders = [LSTMBuilder(1, inp_dim, options.lstm_dims, self.model),
                              LSTMBuilder(1, inp_dim, options.lstm_dims, self.model)]
 
@@ -144,16 +151,16 @@ class Expander:
             dict_fp.readline()
             self.src2dst_dict = dict()
             for line in dict_fp:
-                w,t,f = line.split()
+                w, t, f = line.split()
                 if not w in self.src2dst_dict:
                     self.src2dst_dict[w] = set()
                 self.src2dst_dict[w].add(t)
             print 'loaded dictionaries'
 
-            self.rev_src_dic = ['']*len(self.src_word_dict)
+            self.rev_src_dic = [''] * len(self.src_word_dict)
             for i in self.src_word_dict.keys():
                 self.rev_src_dic[self.src_word_dict[i]] = i
-            self.rev_dst_dic = ['']*len(self.dst_word_dict)
+            self.rev_dst_dic = [''] * len(self.dst_word_dict)
             for i in self.dst_word_dict.keys():
                 self.rev_dst_dic[self.dst_word_dict[i]] = i
             print 'loaded rev maps'
@@ -202,20 +209,20 @@ class Expander:
         top1 = 0
         for a in xrange(len(a_s.src_words)):
             src = a_s.src_words[a]
-            translation =  a_s.dst_words[a]
+            translation = a_s.dst_words[a]
             if translation == self.dst_rare: continue
-            if  src == self.src_rare or not src in self.src_freq_dict: continue # cannot train on this
+            if src == self.src_rare or not src in self.src_freq_dict: continue  # cannot train on this
 
-            k = self.src_freq_dict[src]+' '+a_s.orig_src_tags[a]
+            k = self.src_freq_dict[src] + ' ' + a_s.orig_src_tags[a]
             if not k in self.dst_freq_tag_dict: continue
 
             tr_embed = self.dst_embed_lookup[translation]
             te = dprojector * tr_embed
-            se = sprojector * concatenate([fw[a], bw[len(src_embed)-1-a]])
+            se = sprojector * concatenate([fw[a], bw[len(src_embed) - 1 - a]])
             sim_gold = self.cosine(se, te).npvalue()
 
             others = []
-            neg_samples = random.sample(self.dst_freq_tag_dict[k], min(self.neg,len(self.dst_freq_tag_dict[k])))
+            neg_samples = random.sample(self.dst_freq_tag_dict[k], min(self.neg, len(self.dst_freq_tag_dict[k])))
             for sample in neg_samples:
                 tr_embed = self.dst_embed_lookup[sample]
                 te = dprojector * tr_embed
@@ -224,14 +231,14 @@ class Expander:
 
             rank = 1
             for o in others:
-                if o>sim_gold:
-                    rank+=1
-            mmr += 1.0/rank
+                if o > sim_gold:
+                    rank += 1
+            mmr += 1.0 / rank
             instances += 1
-            if rank ==1:
-                top1+=1
+            if rank == 1:
+                top1 += 1
 
-        return (mmr, instances,top1)
+        return (mmr, instances, top1)
 
     def cosine(self, se, te):
         return dot_product(te, se) / (sqrt(dot_product(te, te)) * sqrt(dot_product(se, se))).value()
@@ -248,10 +255,10 @@ class Expander:
 
         errors = []
         for a in xrange(len(a_s.src_words)):
-            translation =  a_s.dst_words[a]
+            translation = a_s.dst_words[a]
             if translation == self.dst_rare: continue
             src = a_s.src_words[a]
-            if src == self.src_rare or not src in self.src_freq_dict: continue # cannot train on this
+            if src == self.src_rare or not src in self.src_freq_dict: continue  # cannot train on this
 
             k = self.src_freq_dict[src] + ' ' + a_s.orig_src_tags[a]
             if not k in self.dst_freq_tag_dict:  continue
@@ -268,7 +275,7 @@ class Expander:
                 te = dprojector * tr_embed
                 sim_compet = self.cosine(spe, te)
                 v = sim_compet.npvalue()
-                if v>mx:
+                if v > mx:
                     best_other = sim_compet
                     mx = v
             err = max(0, self.margin - self.cosine(spe, trpe) + best_other)
@@ -282,20 +289,20 @@ class Expander:
         tops = 0
         for sentence in sentences:
             alignment_instance = AlignmentInstance(sentence, self.src_word_dict, self.dst_word_dict, self.pos_dict)
-            (v, ins,top1) = self.eval_alignment(alignment_instance)
-            instances+= ins
+            (v, ins, top1) = self.eval_alignment(alignment_instance)
+            instances += ins
             mmr += v
-            tops+= top1
+            tops += top1
 
-        mmr = mmr/instances
-        tops = float(tops)/instances
+        mmr = mmr / instances
+        tops = float(tops) / instances
         renew_cg()
-        print 'mmr:',mmr,'-- tops:',tops, '-- instances:',instances
+        print 'mmr:', mmr, '-- tops:', tops, '-- instances:', instances
         return mmr
 
     def train(self, options, top_mmr):
         renew_cg()
-        sentences = codecs.open(options.train_file,'r').read().strip().split('\n\n')
+        sentences = random.shuffle(codecs.open(options.train_file, 'r').read().strip().split('\n\n'))
         loss = 0
         instances = 0
         i = 0
@@ -361,7 +368,7 @@ class Expander:
         bw = [x.output() for x in b_init.add_inputs(reversed(inputs))]
 
         translations = []
-        for i,w,t,wstr,tstr in zip(xrange(len(words)),words, tags, sen_words, sen_tags):
+        for i, w, t, wstr, tstr in zip(xrange(len(words)), words, tags, sen_words, sen_tags):
             if w == self.src_rare:
                 translations.append('_')
                 continue
@@ -370,7 +377,7 @@ class Expander:
                 candidates = [self.dst_word_dict[t] for t in self.src2dst_dict[wstr] if t in self.dst_word_dict]
             else:
                 freq_level = self.src_freq_dict[w] if w in self.src_freq_dict else 0
-                k = str(freq_level)+' '+tstr
+                k = str(freq_level) + ' ' + tstr
                 if not k in self.dst_freq_tag_dict:
                     translations.append('_')
                     continue
@@ -384,7 +391,7 @@ class Expander:
                 te = dprojector * tr_embed
                 score = self.cosine(se, te).npvalue()
 
-                if score>best_score:
+                if score > best_score:
                     best_score = score
                     best_translation = self.rev_dst_dic[candidate]
             if not wstr in self.src2dst_dict:
@@ -392,16 +399,17 @@ class Expander:
             translations.append(best_translation)
         return translations
 
+
 if __name__ == '__main__':
     (options, args) = Expander.parse_options()
     expander = Expander(options)
-    if options.train_file !='':
+    if options.train_file != '':
         top_mmr = 0
         for i in xrange(options.epochs):
-            print 'epoch',i
+            print 'epoch', i
             top_mmr = expander.train(options, top_mmr)
             print 'saving current epoch'
-            expander.model.save(os.path.join(options.output,options.model+'_'+str(i+1)))
+            expander.model.save(os.path.join(options.output, options.model + '_' + str(i + 1)))
     else:
         writer = codecs.open(options.outfile, 'w')
         with open(options.conll_test, 'r') as conllFP:
@@ -411,10 +419,10 @@ if __name__ == '__main__':
                 [words.append(entry.form) for entry in sentence]
                 [tags.append(entry.pos) for entry in sentence]
                 translations = expander.translate(words, tags)
-                for translation, entry in zip(translations,sentence):
+                for translation, entry in zip(translations, sentence):
                     entry.lemma = entry.form
                     entry.form = translation
-                sys.stdout.write(str(i)+'...')
+                sys.stdout.write(str(i) + '...')
                 writer.write(conll_str(sentence))
         writer.close()
         print 'done!'
