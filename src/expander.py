@@ -315,7 +315,7 @@ class Expander:
                 status += 1
                 if status % 1000 == 0:
                     self.trainer.status()
-                    if options.dev_src != None:
+                    if options.dev_file != None:
                         mmr = self.eval_dev(options)
                         if mmr > top_mmr:
                             print 'saving best model with mmr', mmr
@@ -336,7 +336,7 @@ class Expander:
             self.trainer.update()
             self.trainer.status()
             print loss / instances
-            if options.dev_src != None:
+            if options.dev_file != None:
                 self.eval_dev(options)
                 mmr = self.eval_dev(options)
                 if mmr > top_mmr:
